@@ -11,7 +11,7 @@ const AdminDashboard = () => {
 					<div className="container">
 						<div className="inner_list_banner">
 							<div className="banner_content">
-								<h1>OQOD!</h1>
+								<h1>TREASURY</h1>
 								<p>The real estate investment platform for listing, securitizing and trading diversified  real estate opportunities</p>
 								<Link to="/admin/createproperty" className="btn3">
 									List Property
