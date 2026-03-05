@@ -121,13 +121,13 @@ const propertyCtrl = {
 	//Function to read specific ico by its id.
 	getProperty: async (req, res) => {
 		try {
-			let status=req.query.status;
+			let status = req.query.status;
+			let query = {};
 			if(status){
-				var Property = await property.find({status});
+				// Convert status to number if it's a string
+				query.status = parseInt(status) || status;
 			}
-			else{
-				var Property = await property.find();
-			}
+			const Property = await property.find(query).lean();
 			res.json(Property);
 		} catch (err) {
 			return res.status(500).json({ msg: err.message });
