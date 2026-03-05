@@ -18,6 +18,11 @@ app.use(cors());
 app.use(cookieParser());
 app.use(fileUpload());
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+	res.json({ status: "OK", timestamp: new Date().toISOString() });
+});
+
 //routes
 app.use("/api", require("./Routes/userRoutes"));
 app.use("/api", require("./Routes/propertyRoutes"));
