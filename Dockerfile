@@ -28,9 +28,8 @@ COPY Controller/ ./Controller/
 COPY config/ ./config/
 COPY validation/ ./validation/
 COPY propertyCtrl.js ./
-COPY .env ./
 
-# Set environment variables
+# Set environment variables (Railway provides CONNECTION_URL via env)
 ENV NODE_ENV=production
 ENV PORT=8080
 
