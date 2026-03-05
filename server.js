@@ -89,7 +89,7 @@ if (process.env.NODE_ENV === "production") {
 //listener
 const port = process.env.PORT;
 app.listen(port, () => {
-	console.log(`listening port localhost : ${port}`);
+	console.log(`🚀 SERVER STARTED - API ROUTING FIX DEPLOYED - listening port localhost : ${port}`);
 });
 // Trigger rebuild - Force deployment at Wed Mar 05 2026 14:35:00 GMT+3
 // This comment forces Railway to rebuild the application
