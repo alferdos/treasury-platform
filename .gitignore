@@ -14,3 +14,7 @@ package-lock.json
 frontend/node_modules/
 frontend/package-lock.json
 # frontend/package.json
+
+# Allow build and public directories to be tracked
+!frontend/build/
+!frontend/public/
