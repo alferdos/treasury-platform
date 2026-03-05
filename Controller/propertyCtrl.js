@@ -121,13 +121,16 @@ const propertyCtrl = {
 	//Function to read specific ico by its id.
 	getProperty: async (req, res) => {
 		try {
+			console.log(`[API] GET /api/get_property called with query:`, req.query);
 			let status = req.query.status;
 			let query = {};
 			if(status){
 				// Convert status to number if it's a string
 				query.status = parseInt(status) || status;
 			}
+			console.log(`[API] Querying properties with:`, query);
 			const Property = await property.find(query).lean();
+			console.log(`[API] Found ${Property.length} properties`);
 			res.json(Property);
 		} catch (err) {
 			return res.status(500).json({ msg: err.message });
