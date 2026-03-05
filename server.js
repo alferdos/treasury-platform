@@ -75,15 +75,18 @@ if (process.env.NODE_ENV === "production") {
 		etag: false
 	}));
 	
-	// Catch-all route for SPA - serves index.html for all non-API routes
-	app.get("*", (req, res) => {
-		// Don't serve index.html for /api routes - they should have been handled above
-		if (req.path.startsWith("/api")) {
-			return res.status(404).json({ error: "API endpoint not found", path: req.path });
-		}
-		// Serve the React app for all other routes
-		res.sendFile(path.join(__dirname, "frontend", "build", "index.html"));
-	});
+// Catch-all route for SPA - serves index.html for all non-API routes
+		app.get("*", (req, res) => {
+			console.log(`[CATCH-ALL] Received request for path: ${req.path}`);
+			// Don't serve index.html for /api routes - they should have been handled above
+			if (req.path.startsWith("/api")) {
+				console.log(`[CATCH-ALL] Blocking API request: ${req.path}`);
+				return res.status(404).json({ error: "API endpoint not found", path: req.path });
+			}
+			console.log(`[CATCH-ALL] Serving React app for: ${req.path}`);
+			// Serve the React app for all other routes
+			res.sendFile(path.join(__dirname, "frontend", "build", "index.html"));
+		});
 }
 
 //listener
