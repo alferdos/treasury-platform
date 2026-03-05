@@ -2,10 +2,18 @@ FROM node:16
 
 WORKDIR /app
 
+# Copy frontend source and package files
+COPY frontend/package*.json ./frontend/
+COPY frontend/src ./frontend/src
+COPY frontend/public ./frontend/public
+
+# Install frontend dependencies and build
+RUN cd frontend && npm install --force && npm run build
+
 # Copy backend package files
 COPY package*.json ./
 
-# Install dependencies without optional packages
+# Install backend dependencies without optional packages
 RUN npm install --no-optional --force 2>&1 || npm install --force
 
 # Copy backend source
@@ -16,9 +24,6 @@ COPY Controller/ ./Controller/
 COPY config/ ./config/
 COPY validation/ ./validation/
 COPY propertyCtrl.js ./
-
-# Copy pre-built frontend
-COPY frontend/build ./frontend/build
 
 EXPOSE 8080
 
