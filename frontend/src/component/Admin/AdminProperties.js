@@ -67,7 +67,7 @@ const AdminProperties = () => {
 								<tr key={index}>
 									<th scope="row">{index+1}</th>
                                     {/** Warning: validateDOMNesting(...): <img> cannot appear as a child of <tr>. */}
-									<img src={`${(property.imageName)[0]}`} />
+									<td><img src={`${(property.imageName && property.imageName.length > 0) ? property.imageName[0] : '/img/al_narjes.jpg'}`} alt={property.title} style={{width:'60px',height:'40px',objectFit:'cover'}} /></td>
 									<td>{property.title}</td>
 									<td>{property.address}</td>
 									<td>{property.propertyEstimatedValue}</td>

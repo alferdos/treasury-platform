@@ -12,8 +12,8 @@ import moment from 'moment'
 
 const TradeProperty = () => {
     const dispatch = useDispatch();
-    const [data, setData] = useState("");
-    const [blockchain, setBlockchain] = useState("");
+    const [data, setData] = useState([]);
+    const [blockchain, setBlockchain] = useState([]);
     const [buytrade, setBuyTrade] = useState([]);
     const [selltrade, setSellTrade] = useState([]);
     const [marketdisable, setMarketDisable] = useState(false);
@@ -115,8 +115,8 @@ const TradeProperty = () => {
             var getLatestTransaction = await getDataAPI("/getPropTransaction/" + id +"?userId="+auth.data.user._id+"&isSubscription=false")
             setTransactions(getLatestTransaction.data);
         }
-        setData(getProperty.data);
-        setBlockchain(getBlockchain.data);
+        setData(Array.isArray(getProperty.data) ? getProperty.data : (getProperty.data ? [getProperty.data] : []));
+        setBlockchain(Array.isArray(getBlockchain.data) ? getBlockchain.data : (getBlockchain.data ? [getBlockchain.data] : []));
         setBuyTrade(getBuyTradeData.data);
         setSellTrade(getSellTradeData.data);
         let chart=[];
@@ -197,11 +197,15 @@ const TradeProperty = () => {
                                             className="carousel slide"
                                             data-bs-ride="carousel">
                                             <div className="carousel-inner">
-                                                {(property.imageName).map((imgName, key) => (
+                                                {(property.imageName && Array.isArray(property.imageName) && property.imageName.length > 0) ? property.imageName.map((imgName, key) => (
                                                     <div key={`img${key}`} className={`carousel-item ${(key == 0) ? 'active' : ''}`}>
-                                                        <img src={`${imgName}`} />
+                                                        <img src={`${imgName}`} alt={property.title} />
                                                     </div>
-                                                ))}
+                                                )) : (
+                                                    <div className="carousel-item active">
+                                                        <img src="/img/al_narjes.jpg" alt={property.title} />
+                                                    </div>
+                                                )}
                                             </div>
                                             <button
                                                 className="carousel-control-prev"
@@ -281,8 +285,8 @@ const TradeProperty = () => {
                                                                 return <tr key={`tranx${i}`}>
                                                                     <td>${t.price ? t.price : "23.00"}</td>
                                                                     <td>{t.units} units</td>
-                                                                    <td>{t.createdAt.split("T").shift().replace(/-/g, "/")}</td>
-                                                                    <td>{t.createdAt.split("T")[1].substring(0, 5)}</td>
+                                                    <td>{t.createdAt ? t.createdAt.split("T").shift().replace(/-/g, "/") : "-"}</td>
+                                                    <td>{t.createdAt ? t.createdAt.split("T")[1].substring(0, 5) : "-"}</td>
                                                                 </tr>
                                                             })
                                                         }
@@ -316,7 +320,7 @@ const TradeProperty = () => {
                         <section>
                             <div className="container">
                                 <form className="marketTrade" onSubmit={marketTrade.bind(this)}>
-                                    <input type="hidden" name="propertyId" value={`${blockchain ? blockchain[0].propertyId : ""}`} />
+                                    <input type="hidden" name="propertyId" value={`${blockchain && blockchain.length > 0 ? blockchain[0].propertyId : ""}`} />
                                     <input type="hidden" name="marketPrice" value="0" />
                                     <div className="tocken_detail">
                                         <div className="tocken_details">
@@ -325,14 +329,14 @@ const TradeProperty = () => {
                                                     type="text"
                                                     className="form-control"
                                                     placeholder="Unit Name"
-                                                    value={blockchain ? blockchain[0].contractName : ""}
+                                                    value={blockchain && blockchain.length > 0 ? blockchain[0].contractName : ""}
                                                     required
                                                 />
                                                 <input
                                                     type="text"
                                                     className="form-control"
                                                     placeholder="Unit Id"
-                                                    value={blockchain ? blockchain[0].symbol : ""}
+                                                    value={blockchain && blockchain.length > 0 ? blockchain[0].symbol : ""}
                                                     required
                                                 />
                                             </div>

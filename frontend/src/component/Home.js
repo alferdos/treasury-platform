@@ -82,12 +82,12 @@ const Home = () => {
 											<h4>{property.title}</h4>
 											<Link
 												to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/viewproperty/${property._id}`:`/admin/viewproperty/${property._id}`}>
-												<img src={`${(property.imageName)[0]}`} />
-											</Link>
-											<div className="pr">
-												<p>Unit Price: ${property.tokenPrice}</p>
-												<Link
-													to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/viewproperty/${property._id}`:`/admin/viewproperty/${property._id}`}
+										<img src={`${(property.imageName && property.imageName.length > 0) ? property.imageName[0] : '/img/al_narjes.jpg'}`} alt={property.title} />
+									</Link>
+									<div className="pr">
+										<p>Unit Price: ${property.tokenPrice}</p>
+										<Link
+											to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/viewproperty/${property._id}`:`/admin/viewproperty/${property._id}`}
 													className="btn">
 													Buy
 												</Link>
@@ -113,12 +113,12 @@ const Home = () => {
 											<h4>{property.title}</h4>
 											<Link
 												to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/tradeproperty/${property._id}`:`/admin/tradeproperty/${property._id}`}>
-												<img src={`${(property.imageName)[0]}`} />
-											</Link>
-											<div className="pr">
-												<p>Unit Price: ${property.tokenPrice}</p>
-												<Link
-													to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/tradeproperty/${property._id}`:`/admin/tradeproperty/${property._id}`}
+										<img src={`${(property.imageName && property.imageName.length > 0) ? property.imageName[0] : '/img/al_narjes.jpg'}`} alt={property.title} />
+									</Link>
+									<div className="pr">
+										<p>Unit Price: ${property.tokenPrice}</p>
+										<Link
+											to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/tradeproperty/${property._id}`:`/admin/tradeproperty/${property._id}`}
 													className="btn">
 													Trade
 												</Link>
