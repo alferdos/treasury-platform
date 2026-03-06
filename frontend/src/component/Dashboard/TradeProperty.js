@@ -225,6 +225,11 @@ const TradeProperty = () => {
     const BuySellClickHandler = (action) => {
         document.querySelector("select[name='action']").value = action;
         document.querySelector(".btnClick").click();
+        // Scroll the order form into view smoothly
+        const form = document.querySelector(".marketTrade");
+        if (form) {
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
     
     return (
@@ -349,7 +354,7 @@ const TradeProperty = () => {
                                                         type="button"
                                                         className="btn"
                                                         onClick={() => BuySellClickHandler("buy")}>
-                                                        Subscribe
+                                                        Buy
                                                     </button>
                                                     <button
                                                         type="button"
@@ -375,22 +380,28 @@ const TradeProperty = () => {
                                             <div className="tock_detail">
                                                 <input
                                                     type="text"
+                                                    name="unitName"
                                                     className="form-control"
                                                     placeholder="Unit Name"
                                                     value={blockchain && blockchain.length > 0 ? blockchain[0].contractName : ""}
+                                                    onChange={() => {}}
+                                                    readOnly
                                                     required
                                                 />
                                                 <input
                                                     type="text"
+                                                    name="unitId"
                                                     className="form-control"
                                                     placeholder="Unit Id"
                                                     value={blockchain && blockchain.length > 0 ? blockchain[0].symbol : ""}
+                                                    onChange={() => {}}
+                                                    readOnly
                                                     required
                                                 />
                                             </div>
                                             <div className="tock_detail2">
                                                 <select className="form-select" name="action">
-                                                    <option value="buy">Subscribe</option>
+                                                    <option value="buy">Buy</option>
                                                     <option value="sell">Sell</option>
                                                 </select>
                                                 {tradeError?.action && <span className="error">{tradeError.action}</span>}
