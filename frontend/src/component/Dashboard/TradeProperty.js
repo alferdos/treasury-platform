@@ -186,40 +186,68 @@ const TradeProperty = () => {
 
     const marketTrade = async (e) => {
         e.preventDefault();
-        const { propertyId, units, priceType, marketPrice, price, action } = e.target.elements;
+        if (!auth.data) {
+            swal("Login Required", "Please log in to place an order.", "warning");
+            return;
+        }
+        const form = e.target;
+        const propertyId = form.elements['propertyId'];
+        const units = form.elements['units'];
+        const marketPrice = form.elements['marketPrice'];
+        const price = form.elements['price'];
+        const action = form.elements['action'];
+        // Read radio group value correctly
+        const priceTypeRadios = form.querySelectorAll('input[name="priceType"]');
+        let priceTypeValue = 'marketPrice';
+        priceTypeRadios.forEach(r => { if (r.checked) priceTypeValue = r.value; });
+
         let totalTokenSupply = document.querySelector(".totalTokenSupply").value;
-        if(parseInt(units.value)>parseInt(totalTokenSupply)){
-            swal("Error", "Supply should be less then or equal to total token supply!", "error");
+        if (parseInt(units.value) > parseInt(totalTokenSupply)) {
+            swal("Error", "Units requested exceed total token supply!", "error");
+            return;
         }
-        else{
-            let details = {
-                propertyId: propertyId.value,
-                userId: (auth.data) ? auth.data.user._id : "",
-                units: units.value,
-                priceType: priceType.value,
-                marketPrice: marketPrice.value,
-                price: price.value,
-                action: action.value,
-            };
-            postDataAPI("trade", details).then(function (response) {
-                if (response.data.status == 0) {
-                    setTradeError(response.data.errors);
-                }
-                else if (response.data.status == -1) {
-                    getTrade()
-                    setTradeError(response.data.errors);
-                    swal("Partial Success", response.data.message, "warning");
-                }
-                else {
-                    getTrade();
-                    setTradeError(response.data.errors);
-                    swal("Success", response.data.message, "success");
-                }
-            })
-            .catch(function (error) {
-                console.log(error);
-            });
+        if (!units.value || parseInt(units.value) < 1) {
+            swal("Error", "Please enter a valid number of units.", "error");
+            return;
         }
+        let details = {
+            propertyId: propertyId.value,
+            userId: auth.data.user._id,
+            units: units.value,
+            priceType: priceTypeValue,
+            marketPrice: marketPrice ? marketPrice.value : "0",
+            price: price ? price.value : "0",
+            action: action.value,
+        };
+        postDataAPI("trade", details).then(function (response) {
+            if (response.data.status == 0) {
+                const errors = response.data.errors || {};
+                setTradeError(errors);
+                // Show a clear user-facing message for common cases
+                if (errors.price && errors.price.toLowerCase().includes('balance')) {
+                    swal("Insufficient Balance", "You don't have enough balance to place this buy order. Please top up your account.", "error");
+                } else if (errors.units && (errors.units.toLowerCase().includes('unit') || errors.units.toLowerCase().includes('don'))) {
+                    swal("Insufficient Units", errors.units || "You don't have enough units to sell.", "error");
+                } else {
+                    const msg = Object.values(errors).filter(Boolean).join(' ') || 'Please check your order details.';
+                    swal("Order Failed", msg, "error");
+                }
+            }
+            else if (response.data.status == -1) {
+                getTrade();
+                setTradeError(response.data.errors || {});
+                swal("Partial Success", response.data.message, "warning");
+            }
+            else {
+                getTrade();
+                setTradeError({});
+                swal("Order Placed", response.data.message, "success");
+            }
+        })
+        .catch(function (error) {
+            console.log(error);
+            swal("Error", "Something went wrong. Please try again.", "error");
+        });
     };
 
     const BuySellClickHandler = (action) => {
