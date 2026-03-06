@@ -10,7 +10,6 @@ frontend/.git
 .next
 out
 dist
-build
 .vscode
 .idea
 *.swp
