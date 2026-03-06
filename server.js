@@ -69,24 +69,38 @@ mongoose.connect(
 );
 //listener - Serve frontend in production
 if (process.env.NODE_ENV === "production") {
-	// Serve static files from frontend/build
+	// CRITICAL: Serve static files FIRST with proper configuration
+	// This must come BEFORE any catch-all routes
 	app.use(express.static(path.join(__dirname, "frontend", "build"), {
 		maxAge: "1d",
-		etag: false
+		etag: false,
+		setHeaders: (res, path) => {
+			// Ensure images are served with correct content type
+			if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+				res.setHeader('Content-Type', 'image/jpeg');
+			} else if (path.endsWith('.png')) {
+				res.setHeader('Content-Type', 'image/png');
+			} else if (path.endsWith('.gif')) {
+				res.setHeader('Content-Type', 'image/gif');
+			} else if (path.endsWith('.webp')) {
+				res.setHeader('Content-Type', 'image/webp');
+			}
+		}
 	}));
 	
-// Catch-all route for SPA - serves index.html for all non-API routes
-		app.get("*", (req, res) => {
-			console.log(`[CATCH-ALL] Received request for path: ${req.path}`);
-			// Don't serve index.html for /api routes - they should have been handled above
-			if (req.path.startsWith("/api")) {
-				console.log(`[CATCH-ALL] Blocking API request: ${req.path}`);
-				return res.status(404).json({ error: "API endpoint not found", path: req.path });
-			}
-			console.log(`[CATCH-ALL] Serving React app for: ${req.path}`);
-			// Serve the React app for all other routes
-			res.sendFile(path.join(__dirname, "frontend", "build", "index.html"));
-		});
+	// Catch-all route for SPA - serves index.html for all non-API routes
+	// This MUST come AFTER static file serving
+	app.get("*", (req, res) => {
+		console.log(`[CATCH-ALL] Received request for path: ${req.path}`);
+		// Don't serve index.html for /api routes - they should have been handled above
+		if (req.path.startsWith("/api")) {
+			console.log(`[CATCH-ALL] Blocking API request: ${req.path}`);
+			return res.status(404).json({ error: "API endpoint not found", path: req.path });
+		}
+		console.log(`[CATCH-ALL] Serving React app for: ${req.path}`);
+		// Serve the React app for all other routes
+		res.sendFile(path.join(__dirname, "frontend", "build", "index.html"));
+	});
 }
 
 //listener
