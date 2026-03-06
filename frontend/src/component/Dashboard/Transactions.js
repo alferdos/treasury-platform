@@ -4,6 +4,7 @@ import { getDataAPI, postDataAPI, postDataAPIBare } from "../../utils/API";
 import { refreshToken } from "../../redux/actions/authAction";
 import Modal from "@material-ui/core/Modal";
 import swal from "sweetalert";
+import RiyalSymbol from "../RiyalSymbol";
 
 //create property component to write all details from form.
 
@@ -233,16 +234,16 @@ const Transactions = () => {
 												<td valign="middle">{(t.action=='buy')?"Buy":"Sell"} {t.propertyId.title}</td>
 												<td valign="middle">{t.units} Units ({(t.isSubscription==true)?"Fleet":"Trade"})</td>
 												<td valign="middle">{(t.createdAt).split("T")[0]}</td>
-												<td valign="middle" style={{textAlign:'right'}}>${t.price*t.units}</td>
-											</tr>
-										)): ""
-									}
-									</tbody>
-								</table>	 
-							</div>
+										<td valign="middle" style={{textAlign:'right'}}><RiyalSymbol size="0.85em" />{t.price*t.units}</td>
+									</tr>
+								)): ""
+								}
+								</tbody>
+							</table>	 
 						</div>
 					</div>
 				</div>
+			</div>
 			</div>
 		);
 	};
@@ -261,7 +262,7 @@ const Transactions = () => {
 						</div>	
 						<div className="how_wrk">
 							<div className="lis_col">
-								<h4><span className="cash_b">Cash Balance</span><span className="doll">$</span><span className="big_fnt">{auth.data?auth.data.user.totalBalance:""}</span></h4>
+								<h4><span className="cash_b">Cash Balance</span><span className="doll"><RiyalSymbol size="1em" /></span><span className="big_fnt">{auth.data?auth.data.user.totalBalance:""}</span></h4>
 								<div className="tab_le single_table">
 									<table className="table">
 										<thead>
@@ -278,8 +279,8 @@ const Transactions = () => {
 													<tr key={i}>
 														<td style={{textAlign:'left'}}>{b.propertyId.title}</td>
 														<td>{b.units} units</td>
-														<td>${b.propertyId.tokenPrice}</td>
-														<td style={{textAlign:'right'}}>${b.propertyId.tokenPrice*b.units}</td>
+												<td><RiyalSymbol size="0.85em" />{b.propertyId.tokenPrice}</td>
+												<td style={{textAlign:'right'}}><RiyalSymbol size="0.85em" />{b.propertyId.tokenPrice*b.units}</td>
 													</tr>
 												)): ""
 											}
@@ -287,13 +288,13 @@ const Transactions = () => {
 												<td style={{textAlign:'left', fontSize:'16px'}}>SUMMARY</td>
 												<td></td>
 												<td></td>
-												<td style={{textAlign:'right'}}><strong>${totalbalance}</strong></td>
+												<td style={{textAlign:'right'}}><strong><RiyalSymbol size="0.85em" />{totalbalance}</strong></td>
 											</tr>
 											<tr className="re_sult">
 												<td style={{textAlign:'left', fontSize:'16px'}}>TOTAL BALANCE</td>
 												<td></td>
 												<td></td>
-												<td style={{textAlign:'right'}}><strong>${totalbalance+(auth.data?auth.data.user.totalBalance:0)}</strong></td>
+												<td style={{textAlign:'right'}}><strong><RiyalSymbol size="0.85em" />{totalbalance+(auth.data?auth.data.user.totalBalance:0)}</strong></td>
 											</tr>
 										</tbody>
 									</table>	 
@@ -319,9 +320,9 @@ const Transactions = () => {
 														<td valign="middle">{(t.action=='buy')?"Buy":"Sell"} {t.propertyId.title}</td>
 														<td valign="middle">{t.units} Units ({(t.isSubscription==true)?"Fleet":"Trade"})</td>
 														<td valign="middle">{(t.createdAt).split("T")[0]}</td>
-														<td valign="middle" style={{textAlign:'right'}}>${t.price*t.units}</td>
-													</tr>
-												):""
+										<td valign="middle" style={{textAlign:'right'}}><RiyalSymbol size="0.85em" />{t.price*t.units}</td>
+									</tr>
+								):""
 											): ""
 										}
 										</tbody>

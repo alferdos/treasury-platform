@@ -7,6 +7,7 @@ import swal from "sweetalert";
 import ReactHighcharts from 'react-highcharts/ReactHighstock.src'
 //import priceData from './assets/btcdata.json'
 import moment from 'moment'
+import RiyalSymbol from "../RiyalSymbol"
 
 //create property component to write all details from form.
 
@@ -21,8 +22,8 @@ const TradeProperty = () => {
     const [transactions, setTransactions] = useState([]);
     const [chartdata, setChartData] = useState([]);
 
-    const options = {style: 'currency', currency: 'USD'};
-    const numberFormat = new Intl.NumberFormat('en-US', options);
+    const options = {style: 'currency', currency: 'SAR'};
+    const numberFormat = new Intl.NumberFormat('en-SA', options);
     const configPrice = {
         yAxis: [{
             offset: 20,
@@ -242,7 +243,7 @@ const TradeProperty = () => {
                                                         {buytrade.length!=0 ? buytrade.map((b, i) => (
                                                             <tr key={`buy${i}`}>
                                                                 <td>{b.units} units</td>
-                                                                <td>${b.price}</td>
+                                                                <td><RiyalSymbol size="0.85em" />{b.price}</td>
                                                             </tr>
                                                         )) : <tr><td colSpan={2}>Order book is empty!.</td></tr>}
                                                     </tbody>
@@ -257,7 +258,7 @@ const TradeProperty = () => {
                                                     <tbody>
                                                         {selltrade.length!=0 ? selltrade.map((s, i) => (
                                                             <tr key={`sell${i}`}>
-                                                                <td>${s.price}</td>
+                                                                <td><RiyalSymbol size="0.85em" />{s.price}</td>
                                                                 <td>{s.units} units</td>
                                                             </tr>
                                                         )) : <tr><td colSpan={2}>Order book is empty!.</td></tr>}
@@ -283,7 +284,7 @@ const TradeProperty = () => {
                                                             :
                                                             transactions.map((t, i) => {
                                                                 return <tr key={`tranx${i}`}>
-                                                                    <td>${t.price ? t.price : "23.00"}</td>
+                                                                    <td><RiyalSymbol size="0.85em" />{t.price ? t.price : "23.00"}</td>
                                                                     <td>{t.units} units</td>
                                                     <td>{t.createdAt ? t.createdAt.split("T").shift().replace(/-/g, "/") : "-"}</td>
                                                     <td>{t.createdAt ? t.createdAt.split("T")[1].substring(0, 5) : "-"}</td>
@@ -294,7 +295,7 @@ const TradeProperty = () => {
                                                 </table>
                                             </div>
                                             <div className="token_row">
-                                                <h3>Unit Price: ${property.tokenPrice}</h3>
+                                                <h3>Unit Price: <RiyalSymbol />{property.tokenPrice}</h3>
                                                 <input type="hidden" className="totalTokenSupply" value={property.totalTokenSupply}/>
                                                 <div className="btns">
                                                     <button

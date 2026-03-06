@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { getDataAPI, postDataAPI } from "../../utils/API";
 import Modal from "@material-ui/core/Modal";
 import GlobalTypes from "../../redux/actions/GlobalTypes";
+import RiyalSymbol from "../RiyalSymbol";
 import swal from "sweetalert";
 
 //create property component to write all details from form.
@@ -161,7 +162,7 @@ const ViewProperty = () => {
 							<span>Available Units: {availabletoken}</span>
 						</div>
 						<div className="mb-3">
-							<label>Enter Amount(In $)</label>
+													<label>Enter Amount (In <RiyalSymbol size="0.9em" />)</label>
 							<input
 								className="form-control"
 								type="text"
@@ -171,7 +172,7 @@ const ViewProperty = () => {
 								value={changedata ? changedata.amount : ""}
 								onChange={changeData}
 							/>
-							<span>Available User Balance: ${availablebalance}</span>
+													<span>Available User Balance: <RiyalSymbol size="0.85em" />{availablebalance}</span>
 						</div>
 						<button className="btn btn-default">Buy</button>
 					</form>
@@ -298,7 +299,7 @@ const ViewProperty = () => {
 																	? buysell.map((b, index) => (
 																			<tr key={index}>
 																				<td>{b.units}</td>
-																				<td>${(b.units*property.tokenPrice)}</td>
+																				<td><RiyalSymbol size="0.85em" />{(b.units*property.tokenPrice)}</td>
 																				<td>{b.action}</td>
 																				<td>{b.createdAt ? b.createdAt.split("T")[0] : "-"}</td>
 																			</tr>
@@ -309,7 +310,7 @@ const ViewProperty = () => {
 													</div>
 												</div>
 												<div className="token_row">
-													<h3>Unit Price: ${property.tokenPrice}</h3>
+																<h3>Unit Price: <RiyalSymbol />{property.tokenPrice}</h3>
 													<div className="btns">
 														<button
 															type="button"

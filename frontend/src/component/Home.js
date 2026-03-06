@@ -7,6 +7,7 @@ import DashboardHeader from "./Includes/DashboardHeader";
 import AdminHeader from "./Includes/AdminHeader";
 import Footer from "./Includes/Footer";
 import { blankProperty } from "../redux/actions/propertyAction";
+import RiyalSymbol from "./RiyalSymbol";
 import { refreshToken }  from "../redux/actions/authAction";
 
 const Home = () => {
@@ -85,7 +86,7 @@ const Home = () => {
 										<img src={`${(property.imageName && property.imageName.length > 0) ? property.imageName[0] : '/img/al_narjes.jpg'}`} alt={property.title} />
 									</Link>
 									<div className="pr">
-										<p>Unit Price: ${property.tokenPrice}</p>
+										<p>Unit Price: <RiyalSymbol />{property.tokenPrice}</p>
 										<Link
 											to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/viewproperty/${property._id}`:`/admin/viewproperty/${property._id}`}
 													className="btn">
@@ -116,7 +117,7 @@ const Home = () => {
 										<img src={`${(property.imageName && property.imageName.length > 0) ? property.imageName[0] : '/img/al_narjes.jpg'}`} alt={property.title} />
 									</Link>
 									<div className="pr">
-										<p>Unit Price: ${property.tokenPrice}</p>
+										<p>Unit Price: <RiyalSymbol />{property.tokenPrice}</p>
 										<Link
 											to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/tradeproperty/${property._id}`:`/admin/tradeproperty/${property._id}`}
 													className="btn">

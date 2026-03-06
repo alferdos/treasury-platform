@@ -4,6 +4,7 @@ import { useHistory, Link } from "react-router-dom";
 import { getDataAPI, postDataAPI } from "../../utils/API";
 import { editProperty } from "../../redux/actions/propertyAction";
 import CreatePropertyBlockchain from "./DeployNewICO";
+import RiyalSymbol from "../RiyalSymbol";
 import { VIEW_CONTRACT } from "../../utils/config";
 
 //create property component to write all details from form.
@@ -183,7 +184,7 @@ const EditProperty = () => {
 										<span className="error">{property.data ? property.data.errors.contract_address : ""}</span>
 									</div>
 									<div className="mb-3">
-										<label className="form-label">Unit Price(In $)</label>
+										<label className="form-label">Unit Price (In <RiyalSymbol size="0.9em" />)</label>
 										<input
 											type="text"
 											className="form-control"
