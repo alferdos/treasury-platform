@@ -2,23 +2,15 @@ FROM node:14
 
 WORKDIR /app
 
-# Copy frontend source and package files
-COPY frontend/package*.json ./frontend/
-COPY frontend/src ./frontend/src
+# Copy pre-built frontend (build directory already contains compiled assets)
+COPY frontend/build ./frontend/build
 COPY frontend/public ./frontend/public
-
-# Install frontend dependencies and build with webpack fix
-RUN cd frontend && \
-    rm -rf node_modules package-lock.json && \
-    SKIP_PREFLIGHT_CHECK=true npm install --force && \
-    SKIP_PREFLIGHT_CHECK=true npm run build -- --openssl-legacy-provider || \
-    SKIP_PREFLIGHT_CHECK=true npm run build
 
 # Copy backend package files
 COPY package*.json ./
 
-# Install backend dependencies without optional packages
-RUN npm install --no-optional --force 2>&1 || npm install --force
+# Install backend dependencies
+RUN npm install --force 2>&1 || npm install
 
 # Copy backend source
 COPY server.js ./
