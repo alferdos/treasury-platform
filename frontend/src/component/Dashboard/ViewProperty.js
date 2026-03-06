@@ -10,8 +10,8 @@ import swal from "sweetalert";
 const ViewProperty = () => {
 	const dispatch = useDispatch();
 	const [data, setData] = useState("");
-	const [blockchain, setBlockchain] = useState("");
-	const [buysell, setTransaction] = useState("");
+	const [blockchain, setBlockchain] = useState([]);
+	const [buysell, setTransaction] = useState([]);
 	const [propid, setPropId] = useState("");
 	const [availabletoken, setAvailableToken] = useState("");
 	const [availablebalance, setAvailableBalance] = useState("");
