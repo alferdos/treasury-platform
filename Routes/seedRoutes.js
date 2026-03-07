@@ -4,6 +4,8 @@
  * Deletes and re-inserts order book + historical transactions for all properties.
  */
 const router = require("express").Router();
+const bcrypt = require("bcrypt");
+const User = require("../Model/userModel");
 const Trade = require("../Model/tradeModel");
 const Transaction = require("../Model/transactionModel");
 const ChartData = require("../Model/chartDataModel");
@@ -92,6 +94,39 @@ router.post("/seed-market-data", async (req, res) => {
     res.json({ success: true, summary });
   } catch (err) {
     console.error("Seed error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Upsert admin user
+// POST /api/seed-admin?key=treasury_seed_2026
+router.post("/seed-admin", async (req, res) => {
+  if (req.query.key !== SEED_KEY) return res.status(403).json({ error: "Forbidden" });
+  try {
+    const email = "admin@treasury.sa";
+    const plainPassword = "NMf@2016";
+    const hashed = await bcrypt.hash(plainPassword, 8);
+    const existing = await User.findOne({ email });
+    if (existing) {
+      // Update password and ensure role=1 (admin)
+      existing.password = hashed;
+      existing.role = 1;
+      await existing.save();
+      return res.json({ success: true, action: "updated", email });
+    }
+    // Create new admin user
+    const admin = new User({
+      name: "Admin",
+      email,
+      national_id: "ADMIN000001",
+      phone_no: "0500000000",
+      password: hashed,
+      role: 1,
+    });
+    await admin.save();
+    res.json({ success: true, action: "created", email });
+  } catch (err) {
+    console.error("Seed admin error:", err);
     res.status(500).json({ error: err.message });
   }
 });
