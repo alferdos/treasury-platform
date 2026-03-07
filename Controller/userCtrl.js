@@ -8,13 +8,11 @@ const Balance = require("../Model/balanceModel");
 const Transaction = require("../Model/transactionModel");
 
 // Configure Cloudinary
-if (process.env.CLOUDINARY_CLOUD_NAME) {
-	cloudinary.config({
-		cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-		api_key: process.env.CLOUDINARY_API_KEY,
-		api_secret: process.env.CLOUDINARY_API_SECRET,
-	});
-}
+cloudinary.config({
+	cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dfzwynbsl',
+	api_key: process.env.CLOUDINARY_API_KEY || '392361113499844',
+	api_secret: process.env.CLOUDINARY_API_SECRET || 'to_UWrKOwt73oXRlD8ZaQqRfW-g',
+});
 
 const uploadProfilePicToCloudinary = (file) => {
 	return new Promise((resolve, reject) => {
@@ -316,17 +314,10 @@ const userController = {
 
 	updateProfilePic: async (req, res) => {
 		try {
-			var image = req.files.file;
-			let imagename;
-			if (process.env.CLOUDINARY_CLOUD_NAME) {
-				// Upload to Cloudinary for persistent storage
-				imagename = await uploadProfilePicToCloudinary(image);
-			} else {
-				// Fallback to local storage
-				var timestamp = Date.now();
-				imagename = '/profilePic/' + timestamp + '.' + image.name.split('.').pop();
-				image.mv('./frontend/public/profilePic/' + timestamp + '.' + image.name.split('.').pop());
-			}
+		var image = req.files.file;
+		let imagename;
+		// Always upload to Cloudinary for persistent storage
+		imagename = await uploadProfilePicToCloudinary(image);
 			const data = await User.findOneAndUpdate(
 				{ _id: req.body.user_id },
 				{ profile_image: imagename },
