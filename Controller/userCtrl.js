@@ -466,6 +466,23 @@ const userController = {
 		}
 	},
 
+	addFunds: async (req, res) => {
+		try {
+			const { userId, amount } = req.body;
+			if (!userId || !amount || isNaN(amount) || Number(amount) <= 0) {
+				return res.json({ status: 0, errors: { message: "Invalid userId or amount" } });
+			}
+			const user = await User.findById(userId);
+			if (!user) {
+				return res.json({ status: 0, errors: { message: "User not found" } });
+			}
+			await User.findByIdAndUpdate(userId, { $inc: { totalBalance: Number(amount) } });
+			return res.json({ status: 1, message: `Added ${amount} SAR to ${user.name}'s balance` });
+		} catch (err) {
+			return res.json({ status: 0, errors: { message: err.message } });
+		}
+	},
+
 	cronJobFetchRecord: async (req, res) => {
 		try {
 			const contractAddress="0x5e77b99cdae0a32a0500548924838a3f4249d233";

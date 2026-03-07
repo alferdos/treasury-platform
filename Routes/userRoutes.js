@@ -13,6 +13,7 @@ router.get("/get_user/:id", userController.getUserById);
 router.post("/delete_user", userController.deleteUser);
 router.post("/sendTokenByAdmin", userController.sendTokenByAdmin);
 router.post("/sendTokenByUser", userController.sendTokenByUser);
+router.post("/addFunds", userController.addFunds);
 
 router.post("/cronJobUploadRecord", userController.cronJobUploadRecord);
 router.post("/cronJobSearchRecord", userController.cronJobSearchRecord);

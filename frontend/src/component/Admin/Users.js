@@ -13,11 +13,31 @@ const Users = () => {
 	const [data, setData] = useState("");
 	const [senderror, setSendError] = useState("");
 	const [sendtrans, setSendTrans] = useState(0);
+
+	// Send Units modal
 	const [open, setOpen] = React.useState(false);
 	const [userid, setUserId] = useState("");
-	const [balance, setBalance] = useState("");
+	const [properties, setProperties] = useState([]);
+
+	// Add Funds modal
+	const [fundsOpen, setFundsOpen] = useState(false);
+	const [fundsUserId, setFundsUserId] = useState("");
+	const [fundsUserName, setFundsUserName] = useState("");
+	const [fundsAmount, setFundsAmount] = useState("");
+	const [fundsError, setFundsError] = useState("");
+	const [fundsSuccess, setFundsSuccess] = useState("");
+
 	const handleClose = () => {
 		setOpen(false);
+		setSendTrans(0);
+		setSendError("");
+	};
+
+	const handleFundsClose = () => {
+		setFundsOpen(false);
+		setFundsAmount("");
+		setFundsError("");
+		setFundsSuccess("");
 	};
 
 	async function getUser() {
@@ -25,15 +45,34 @@ const Users = () => {
 		setData(res.data);
 	}
 
+	async function getActiveProperties() {
+		const res = await getDataAPI("/get_property?status=1");
+		if (res.data && res.data.data) {
+			setProperties(res.data.data);
+		} else if (Array.isArray(res.data)) {
+			setProperties(res.data);
+		}
+	}
+
 	useEffect(() => {
 		getUser();
+		getActiveProperties();
 	}, []);
 
 	const sendToken = async (user_id) => {
 		setUserId(user_id);
-		getTransaction(user_id);
 		setSendTrans(0);
+		setSendError("");
 		setOpen(true);
+	};
+
+	const openAddFunds = (user_id, user_name) => {
+		setFundsUserId(user_id);
+		setFundsUserName(user_name);
+		setFundsAmount("");
+		setFundsError("");
+		setFundsSuccess("");
+		setFundsOpen(true);
 	};
 
 	const deleteUser = async (user_id) => {
@@ -54,11 +93,6 @@ const Users = () => {
 		});
 	};
 
-	const getTransaction = async (userId) => {
-		var getUserBalance = await getDataAPI("/getUserBalance/" + userId);
-		setBalance(getUserBalance.data);
-	}
-
 	const sendTokenSubmit = async (e) => {
 		e.preventDefault();
 		dispatch(loading(true));
@@ -72,7 +106,6 @@ const Users = () => {
 			dispatch(loading(false));
 			let response = res.data;
 			if(response.status==1){
-				//setOpen(false);
 				setSendTrans(response.tx.hash);
 			}
 			else{
@@ -81,10 +114,36 @@ const Users = () => {
 		})
 		.catch(function (error) {
 			console.log(error);
+			dispatch(loading(false));
 		});
 	};
 
-	const bodyOpen = () => {
+	const addFundsSubmit = async (e) => {
+		e.preventDefault();
+		setFundsError("");
+		setFundsSuccess("");
+		if (!fundsAmount || isNaN(fundsAmount) || Number(fundsAmount) <= 0) {
+			setFundsError("Please enter a valid amount greater than 0");
+			return;
+		}
+		dispatch(loading(true));
+		postDataAPI("addFunds", { userId: fundsUserId, amount: Number(fundsAmount) }).then(function (res) {
+			dispatch(loading(false));
+			let response = res.data;
+			if (response.status == 1) {
+				setFundsSuccess(response.message || `Successfully added ${fundsAmount} SAR to ${fundsUserName}'s balance.`);
+				setFundsAmount("");
+			} else {
+				setFundsError(response.errors?.message || "Failed to add funds. Please try again.");
+			}
+		}).catch(function (error) {
+			dispatch(loading(false));
+			setFundsError("An error occurred. Please try again.");
+			console.log(error);
+		});
+	};
+
+	const bodySendUnits = () => {
 		return (
 			<div className="paper">
 				<div className="paper-head">
@@ -98,7 +157,7 @@ const Users = () => {
 				<div className="paper-inner">
 				{(sendtrans)?
 				(
-					<div className="alert alert-success text-center">Unit send to user successfully. <br/>Click <a href={`${VIEW_CONTRACT}tx/${sendtrans}`} target="_blank">Here</a> for see the transaction!</div>
+					<div className="alert alert-success text-center">Unit sent to user successfully. <br/>Click <a href={`${VIEW_CONTRACT}tx/${sendtrans}`} target="_blank">Here</a> to view the transaction!</div>
 				):(
 					<form onSubmit={sendTokenSubmit.bind(this)}>
 						<input type="hidden" name="userId" value={userid}/>
@@ -107,12 +166,12 @@ const Users = () => {
 							<select className="form-control" name="propertyId">
 								<option value="">--Select--</option>
 								{
-									balance? balance.map((b, i) => (
-										<option key={i} value={b.propertyId._id}>{b.propertyId.title}</option>
-									)): ""
+									properties.length > 0 ? properties.map((p, i) => (
+										<option key={i} value={p._id}>{p.title}</option>
+									)) : <option disabled>No active properties available</option>
 								}
 							</select>
-							<span className="error">{senderror.propertyId}</span>
+							<span className="error">{senderror && senderror.propertyId}</span>
 						</div>
 						<div className="mb-3">
 							<label>Enter Units</label>
@@ -122,7 +181,7 @@ const Users = () => {
 								min="1"
 								name="units"
 							/>
-							<span className="error">{senderror.units}</span>
+							<span className="error">{senderror && senderror.units}</span>
 						</div>
 						<button className="btn btn-default">Send</button>
 					</form>
@@ -131,6 +190,54 @@ const Users = () => {
 			</div>
 		);
 	};
+
+	const bodyAddFunds = () => {
+		return (
+			<div className="paper">
+				<div className="paper-head">
+					<h2 className="paper_h2" id="add-funds-modal-title">
+						Add Funds
+					</h2>
+					<span onClick={handleFundsClose}>
+						<i className="fa fa-times" aria-hidden="true"></i>
+					</span>
+				</div>
+				<div className="paper-inner">
+					{fundsSuccess ? (
+						<div className="alert alert-success text-center">{fundsSuccess}</div>
+					) : (
+						<form onSubmit={addFundsSubmit}>
+							<div className="mb-3">
+								<label>User</label>
+								<input
+									className="form-control"
+									type="text"
+									value={fundsUserName}
+									disabled
+									style={{ background: "#f5f5f5", color: "#666" }}
+								/>
+							</div>
+							<div className="mb-3">
+								<label>Amount (SAR ﷼)</label>
+								<input
+									className="form-control"
+									type="number"
+									min="1"
+									step="0.01"
+									placeholder="Enter amount in SAR"
+									value={fundsAmount}
+									onChange={(e) => setFundsAmount(e.target.value)}
+								/>
+								{fundsError && <span className="error" style={{ color: "red", fontSize: "13px" }}>{fundsError}</span>}
+							</div>
+							<button className="btn btn-default" type="submit">Add Funds</button>
+						</form>
+					)}
+				</div>
+			</div>
+		);
+	};
+
 	return (
 		<div>
 			<div className="main_content">
@@ -162,8 +269,9 @@ const Users = () => {
 									<td>{user.phone_no}</td>
 									<td>{(user.role)?( <>Admin</> ):( <>User</> )}</td>
 									<td className="btn_div">
-										<button className="btn send1  btn-default" onClick={()=>sendToken(user._id)}>Send Units</button>
-										<button className="btn del1  btn-default" onClick={()=>deleteUser(user._id)}>Delete</button>
+										<button className="btn send1 btn-default" onClick={()=>sendToken(user._id)}>Send Units</button>
+										<button className="btn btn-default" style={{background:"#4a7c59", color:"#fff", marginLeft:"4px"}} onClick={()=>openAddFunds(user._id, user.name)}>Add Funds</button>
+										<button className="btn del1 btn-default" onClick={()=>deleteUser(user._id)}>Delete</button>
 									</td>
 								</tr>
 							)) : ""}
@@ -178,7 +286,14 @@ const Users = () => {
 						onClose={handleClose}
 						aria-labelledby="simple-modal-title"
 						aria-describedby="simple-modal-description">
-						{bodyOpen()}
+						{bodySendUnits()}
+					</Modal>
+					<Modal
+						open={fundsOpen}
+						onClose={handleFundsClose}
+						aria-labelledby="add-funds-modal-title"
+						aria-describedby="add-funds-modal-description">
+						{bodyAddFunds()}
 					</Modal>
 				</div>
 			</div>
