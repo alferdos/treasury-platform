@@ -113,9 +113,12 @@ const DashboardHeader = () => {
                   to="/dashboard/profile"
                 >
                   <img
-                    src={`/profilePic/${
-                      auth.data ? auth.data?.user?.profile_image : ""
-                    }`}
+                    src={auth.data?.user?.profile_image
+                      ? (auth.data.user.profile_image.startsWith('http')
+                          ? auth.data.user.profile_image
+                          : `/profilePic/${auth.data.user.profile_image}`)
+                      : '/profilePic/default.png'}
+                    onError={e => { e.target.style.display = 'none'; }}
                   />
                   Welcome, {auth.data ? auth.data.user.name.split(" ")[0] : ""}
                 </Link>
