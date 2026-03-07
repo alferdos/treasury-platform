@@ -602,21 +602,70 @@ padding-right: 0 !important;
 }
 .list_latest_content .bl_ock {
 	background: #fff;
-	padding: 25px;
-	border-radius: 10px;
-	text-align: center;
+	padding: 0;
+	border-radius: 14px;
+	text-align: left;
+	box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+	transition: transform 0.22s ease, box-shadow 0.22s ease;
+	overflow: hidden;
 }
-.list_latest_content .bl_ock img {
+.list_latest_content .bl_ock:hover {
+	transform: translateY(-4px);
+	box-shadow: 0 8px 28px rgba(0,0,0,0.13);
+}
+.bl_ock_img_wrap {
+	position: relative;
+	overflow: hidden;
+}
+.bl_ock_img_overlay {
+	position: absolute;
+	bottom: 0; left: 0; right: 0;
+	padding: 28px 14px 10px;
+	background: linear-gradient(to top, rgba(0,0,0,0.52) 0%, transparent 100%);
+	pointer-events: none;
+}
+.bl_ock_img_overlay .bl_ock_location {
+	color: rgba(255,255,255,0.88);
+	font-size: 12px;
+	letter-spacing: 0.03em;
+}
+.bl_ock_body {
+	padding: 16px 18px 18px;
+}
+.bl_ock_title {
+	font-size: 15px;
+	font-weight: 700;
+	color: #1a1a1a;
+	margin: 0 0 12px;
+	line-height: 1.35;
+}
+.closed_badge {
+	display: inline-block;
+	background: #f0ece4;
+	color: #7a6a50;
+	font-size: 12px;
+	font-weight: 600;
+	padding: 4px 14px;
+	border-radius: 20px;
+	letter-spacing: 0.04em;
+	margin-top: 4px;
+}
+.bl_ock_img_wrap img {
 	width: 100%;
-	border-radius: 10px;
-	margin: 20px 0;
-	height: 220px;
+	border-radius: 0;
+	margin: 0;
+	height: 210px;
 	object-fit: cover;
+	display: block;
+	transition: transform 0.35s ease;
+}
+.list_latest_content .bl_ock:hover .bl_ock_img_wrap img {
+	transform: scale(1.04);
 }
 .pr {
 	display: flex;
 	justify-content: space-between;
-	padding: 13px 0 28px 0;
+	padding: 0 0 14px 0;
 	align-items: center;
 }
 .pr p {
@@ -781,6 +830,10 @@ display: flex;
 flex-direction: column;
 gap: 16px;
 }
+.footer_brand img {
+filter: brightness(0) invert(1);
+opacity: 0.92;
+}
 .footer_tagline {
 font-size: 14px;
 line-height: 1.7;
@@ -815,6 +868,21 @@ color: #f8b602;
 font-size: 14px;
 line-height: 1.6;
 color: rgba(255,255,255,0.55);
+}
+.footer_social {
+display: flex;
+gap: 16px;
+align-items: center;
+margin-top: 8px;
+}
+.footer_social a {
+color: rgba(255,255,255,0.5);
+transition: color 0.2s;
+display: flex;
+align-items: center;
+}
+.footer_social a:hover {
+color: #f8b602;
 }
 .footer_bottom {
 display: flex;

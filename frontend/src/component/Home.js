@@ -80,24 +80,30 @@ const Home = () => {
 								{data1!="" ? data1.map((property, i) =>
 									(
 										<div className="bl_ock" key={i}>
-											<h4>{property.title}</h4>
-											<Link
-												to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/viewproperty/${property._id}`:`/admin/viewproperty/${property._id}`}>
-										<img src={`${(property.imageName && property.imageName.length > 0) ? property.imageName[0] : '/img/al_narjes.jpg'}`} alt={property.title} />
-									</Link>
-									<div className="pr">
-										<p>Unit Price: <RiyalSymbol />{property.tokenPrice}</p>
-										<Link
-											to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/viewproperty/${property._id}`:`/admin/viewproperty/${property._id}`}
-													className="btn">
-																Subscribe
+											<div className="bl_ock_img_wrap">
+												<Link to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/viewproperty/${property._id}`:`/admin/viewproperty/${property._id}`}>
+													<img src={`${(property.imageName && property.imageName.length > 0) ? property.imageName[0] : '/img/al_narjes.jpg'}`} alt={property.title} />
 												</Link>
-											</div>
-											<div className="bar">
-												<div className="progress">
-												<div className="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style={{maxWidth: `${parseInt((property.tokenSupply/property.totalTokenSupply)*100)}%`}}></div>
+												<div className="bl_ock_img_overlay">
+													<span className="bl_ock_location">{property.address || 'Riyadh, Saudi Arabia'}</span>
 												</div>
-												<span className="title">{parseInt((property.tokenSupply/property.totalTokenSupply)*100)}%</span>
+											</div>
+											<div className="bl_ock_body">
+												<h4 className="bl_ock_title">{property.title}</h4>
+												<div className="pr">
+													<p>Unit Price: <RiyalSymbol />{property.tokenPrice}</p>
+													<Link
+														to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/viewproperty/${property._id}`:`/admin/viewproperty/${property._id}`}
+														className="btn">
+														Subscribe
+													</Link>
+												</div>
+												<div className="bar">
+													<div className="progress">
+														<div className="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style={{maxWidth: `${parseInt((property.tokenSupply/property.totalTokenSupply)*100)}%`}}></div>
+													</div>
+													<span className="title">{parseInt((property.tokenSupply/property.totalTokenSupply)*100)}%</span>
+												</div>
 											</div>
 										</div>
 									)): ""
@@ -111,20 +117,26 @@ const Home = () => {
 								{data2!="" ? data2.map((property, i) =>
 									(
 										<div className="bl_ock" key={i}>
-											<h4>{property.title}</h4>
-											<Link
-												to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/tradeproperty/${property._id}`:`/admin/tradeproperty/${property._id}`}>
-										<img src={`${(property.imageName && property.imageName.length > 0) ? property.imageName[0] : '/img/al_narjes.jpg'}`} alt={property.title} />
-									</Link>
-									<div className="pr">
-										<p>Unit Price: <RiyalSymbol />{property.tokenPrice}</p>
-										<Link
-											to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/tradeproperty/${property._id}`:`/admin/tradeproperty/${property._id}`}
-													className="btn">
-													Trade
+											<div className="bl_ock_img_wrap">
+												<Link to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/tradeproperty/${property._id}`:`/admin/tradeproperty/${property._id}`}>
+													<img src={`${(property.imageName && property.imageName.length > 0) ? property.imageName[0] : '/img/al_narjes.jpg'}`} alt={property.title} />
 												</Link>
+												<div className="bl_ock_img_overlay">
+													<span className="bl_ock_location">{property.address || 'Riyadh, Saudi Arabia'}</span>
+												</div>
 											</div>
-											<div><center>Closed</center></div>
+											<div className="bl_ock_body">
+												<h4 className="bl_ock_title">{property.title}</h4>
+												<div className="pr">
+													<p>Unit Price: <RiyalSymbol />{property.tokenPrice}</p>
+													<Link
+														to={(header=="guest")?`/login`:(header=="dashboard")?`/dashboard/tradeproperty/${property._id}`:`/admin/tradeproperty/${property._id}`}
+														className="btn">
+														Trade
+													</Link>
+												</div>
+												<div><span className="closed_badge">Closed</span></div>
+											</div>
 										</div>
 									)): ""
 								}
