@@ -1,9 +1,32 @@
 const Web3 = require("web3");
 const crypto = require('crypto');
 const ethers = require('ethers');
+const cloudinary = require('cloudinary').v2;
 const Property = require("../Model/propertyModel");
 const User = require("../Model/userModel");
 const Balance = require("../Model/balanceModel");
+const Transaction = require("../Model/transactionModel");
+
+// Configure Cloudinary
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+	cloudinary.config({
+		cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+		api_key: process.env.CLOUDINARY_API_KEY,
+		api_secret: process.env.CLOUDINARY_API_SECRET,
+	});
+}
+
+const uploadProfilePicToCloudinary = (file) => {
+	return new Promise((resolve, reject) => {
+		cloudinary.uploader.upload_stream(
+			{ folder: 'treasury-profiles', resource_type: 'image' },
+			(error, result) => {
+				if (error) reject(error);
+				else resolve(result.secure_url);
+			}
+		).end(file.data);
+	});
+};
 const validateLogin = require("../validation/login");
 const validateRegister = require("../validation/register");
 const validateUpdatePassword = require("../validation/updatePassword");
@@ -293,19 +316,22 @@ const userController = {
 
 	updateProfilePic: async (req, res) => {
 		try {
-			var timestamp = Date.now();
-			var image=req.files.file;
-			var imagename = timestamp + "." + image.name.split(".").pop();
-			image.mv("./frontend/public/profilePic/" + imagename);
+			var image = req.files.file;
+			let imagename;
+			if (process.env.CLOUDINARY_CLOUD_NAME) {
+				// Upload to Cloudinary for persistent storage
+				imagename = await uploadProfilePicToCloudinary(image);
+			} else {
+				// Fallback to local storage
+				var timestamp = Date.now();
+				imagename = '/profilePic/' + timestamp + '.' + image.name.split('.').pop();
+				image.mv('./frontend/public/profilePic/' + timestamp + '.' + image.name.split('.').pop());
+			}
 			const data = await User.findOneAndUpdate(
-				{
-				_id: req.body.user_id
-				},
-				{
-					profile_image: imagename
-				},
+				{ _id: req.body.user_id },
+				{ profile_image: imagename },
 				{ new: true }
-			)
+			);
 			return res.json({
 				status: 1,
 				data: data
@@ -364,6 +390,10 @@ const userController = {
 			const { units, propertyId, userId } = req.body;
 			let property= await Property.findById(propertyId);
 			let user= await User.findById(userId);
+			if (!property) return res.json({ status: 0, errors: { message: "Property not found." } });
+			if (!property.contract_address) return res.json({ status: 0, errors: { message: "This property has no deployed token contract. Please deploy it first from the Properties page." } });
+			if (!user) return res.json({ status: 0, errors: { message: "User not found." } });
+			if (!user.walletAddress) return res.json({ status: 0, errors: { message: "This user has no wallet address. They must log in once to generate a wallet." } });
 			const walletAddress = user.walletAddress;
 			const contractAddress=property.contract_address;
 			let wallet = new ethers.Wallet(privKey);
@@ -375,11 +405,14 @@ const userController = {
 			var options = { gasLimit: 9000000 }; 
 			contract.transfer(decrypt(walletAddress), numberOfTokens, options).then((tx) => {
 				return res.json({ status: 1, tx });
+			}).catch((txErr) => {
+				console.log(txErr, "blockchain transfer error");
+				return res.json({ status: 0, errors: { message: "Blockchain transfer failed: " + (txErr.reason || txErr.message || "Unknown error") } });
 			});
 		}
 		catch(err) {
 			console.log(err,"errr")
-			return res.json({ status: 0, errors: { message: "Something is wrong!" } });
+			return res.json({ status: 0, errors: { message: err.message || "Something is wrong!" } });
 		}
 	},
 
@@ -504,6 +537,73 @@ const userController = {
 		}
 		catch(err) {
 			return res.json({ status: 0, errors: { message: "Something is wrong!" } });
+		}
+	},
+
+	// Admin: get full user detail (balance, property units, transactions)
+	getUserDetail: async (req, res) => {
+		try {
+			const userId = req.params.userId;
+			const user = await User.findById(userId).select('-password -privateKey');
+			if (!user) return res.status(404).json({ msg: 'User not found' });
+			const balances = await Balance.find({ userId }).populate('propertyId');
+			const transactions = await Transaction.find({ userId }).populate('propertyId').sort({ createdAt: -1 }).limit(50);
+			return res.json({ status: 1, user, balances, transactions });
+		} catch (err) {
+			return res.status(500).json({ msg: err.message });
+		}
+	},
+
+	// Admin: dashboard analytics
+	getAdminAnalytics: async (req, res) => {
+		try {
+			const Property = require('../Model/propertyModel');
+			// Total SAR in all user wallets
+			const users = await User.find({ role: 0 });
+			const totalFunds = users.reduce((sum, u) => sum + (u.totalBalance || 0), 0);
+			const totalUsers = users.length;
+			// All transactions
+			const transactions = await Transaction.find().populate('propertyId').sort({ createdAt: -1 });
+			// Total transaction value
+			const totalTransactionValue = transactions.reduce((sum, t) => sum + (t.price || 0), 0);
+			// Fee calculations
+			// Listing fee: 2% of propertyEstimatedValue for each listed property
+			const properties = await Property.find();
+			const listingFees = properties.reduce((sum, p) => sum + ((p.propertyEstimatedValue || 0) * 0.02), 0);
+			// Subscription fee: 1% of each buy transaction price
+			const subscriptionFees = transactions
+				.filter(t => t.action === 'buy' && t.isSubscription)
+				.reduce((sum, t) => sum + ((t.price || 0) * 0.01), 0);
+			// Exchange fee: 0.25% from each party (0.5% total) on non-subscription trades
+			const exchangeFees = transactions
+				.filter(t => !t.isSubscription)
+				.reduce((sum, t) => sum + ((t.price || 0) * 0.005), 0);
+			// Transactions by date (last 30 days)
+			const thirtyDaysAgo = new Date();
+			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+			const recentTx = transactions.filter(t => new Date(t.createdAt) >= thirtyDaysAgo);
+			const txByDate = {};
+			recentTx.forEach(t => {
+				const dateKey = new Date(t.createdAt).toISOString().split('T')[0];
+				if (!txByDate[dateKey]) txByDate[dateKey] = { count: 0, value: 0 };
+				txByDate[dateKey].count += 1;
+				txByDate[dateKey].value += (t.price || 0);
+			});
+			const txByDateArray = Object.entries(txByDate).map(([date, data]) => ({ date, ...data })).sort((a,b) => a.date.localeCompare(b.date));
+			return res.json({
+				status: 1,
+				totalFunds,
+				totalUsers,
+				totalTransactionValue,
+				totalProperties: properties.length,
+				listingFees,
+				subscriptionFees,
+				exchangeFees,
+				txByDate: txByDateArray,
+				recentTransactions: transactions.slice(0, 10),
+			});
+		} catch (err) {
+			return res.status(500).json({ msg: err.message });
 		}
 	},
 };

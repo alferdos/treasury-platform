@@ -13,7 +13,7 @@ import Users from "../Admin/Users";
 import RequestFund from "../Admin/RequestFund";
 import AdminProperties from "../Admin/AdminProperties";
 import EditProperty from "../Admin/EditProperty";
-
+import AdminUserDetail from "../Admin/AdminUserDetail";
 
 //admin layout component
 const DashboardLayout = () => {
@@ -66,9 +66,12 @@ const DashboardLayout = () => {
 					<Route exact path="/admin/properties">
 						<AdminProperties />
 					</Route>
-					<Route exact path="/admin/property/:id">
-						<EditProperty />
-					</Route>
+				<Route exact path="/admin/property/:id">
+					<EditProperty />
+				</Route>
+				<Route exact path="/admin/user/:userId">
+					<AdminUserDetail />
+				</Route>
 		</Switch>
 		</div>
 	);

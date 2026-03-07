@@ -14,6 +14,8 @@ router.post("/delete_user", userController.deleteUser);
 router.post("/sendTokenByAdmin", userController.sendTokenByAdmin);
 router.post("/sendTokenByUser", userController.sendTokenByUser);
 router.post("/addFunds", userController.addFunds);
+router.get("/getUserDetail/:userId", userController.getUserDetail);
+router.get("/getAdminAnalytics", userController.getAdminAnalytics);
 
 router.post("/cronJobUploadRecord", userController.cronJobUploadRecord);
 router.post("/cronJobSearchRecord", userController.cronJobSearchRecord);

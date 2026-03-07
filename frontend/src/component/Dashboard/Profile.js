@@ -1,319 +1,239 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Route, Switch, Link, useHistory } from "react-router-dom";
+import { Link } from "react-router-dom";
 import swal from "sweetalert";
-import { refreshToken, updateProfile, updateProfilePic } from "../../redux/actions/authAction";
-import { postDataAPIBare, getDataAPI } from "../../utils/API";
-import Modal from "@material-ui/core/Modal";
+import { refreshToken } from "../../redux/actions/authAction";
+import { postDataAPIBare } from "../../utils/API";
+
+const inputStyle = {
+  width: "100%", padding: "11px 14px", border: "1.5px solid #e5e7eb", borderRadius: 9,
+  fontSize: 14, color: "#111827", background: "#f9fafb", outline: "none",
+  boxSizing: "border-box", fontFamily: "inherit",
+};
+const labelStyle = { fontSize: 12.5, fontWeight: 600, color: "#374151", display: "block", marginBottom: 5 };
+const cardStyle = { background: "#fff", borderRadius: 16, padding: "28px 32px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 24 };
 
 const Profile = () => {
   const dispatch = useDispatch();
-  const [authuser, setAuthUser] = useState("");
+  const [authuser, setAuthUser] = useState({});
   const [errors, setErrors] = useState({});
+  const [showUpload, setShowUpload] = useState(false);
+  const [image, setImage] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const { auth } = useSelector((state) => state);
+
   useEffect(() => {
-    if (auth.data) {
-      var response = auth.data;
-      if (response.errors === undefined) {
-        response.errors = 0;
-      }
-      if (response.status === 1) {
-        setAuthUser(response.user);
-        if (response.user.phone_no) {
-          const number = response.user.phone_no; // Example number
-          // const numberString = number.toString();
-          const result = number.slice(2);
-          setAuthUser((prevState) => ({
-            ...prevState,
-            phone_no: result,
-          }));
-        }
-      }
+    if (auth.data?.status === 1) {
+      const u = auth.data.user;
+      setAuthUser({ ...u, phone_no: u.phone_no ? u.phone_no.toString().slice(2) : "" });
     }
   }, [auth]);
-  const handleChangeInput = (e) => {
+
+  const handleInput = (e) => {
     const { name, value } = e.target;
-    setAuthUser({ [name]: value });
-
-    if (e.target.name == "name") {
-      var val = e.target.value;
-      var letters = /^[A-Za-z\s]+$/;
-      if (val == "") {
-        document.querySelector(".name.error").innerHTML = "Name is required";
-      } else if (!val.match(letters)) {
-        document.querySelector(".name.error").innerHTML =
-          "Only letters required";
-      } else {
-        document.querySelector(".name.error").innerHTML = "";
-      }
-    }
-    if (e.target.name == "email") {
-      var val = e.target.value;
-      var validRegex =
-        /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
-      if (val == "") {
-        document.querySelector(".email.error").innerHTML = "Email is required";
-      } else if (!val.match(validRegex)) {
-        document.querySelector(".email.error").innerHTML =
-          "Please enter a valid email address";
-      } else {
-        document.querySelector(".email.error").innerHTML = "";
-      }
-    }
-    if (e.target.name == "national_id") {
-      var val = e.target.value;
-      if (val == "") {
-        document.querySelector(".national_id.error").innerHTML =
-          "National Id is required";
-      } else if (val.length <= 2 || val.length > 10) {
-        document.querySelector(".national_id.error").innerHTML =
-          "ID length must be greater than 2 and less than 10 chracter!";
-      } else {
-        document.querySelector(".national_id.error").innerHTML = "";
-      }
-    }
-    if (e.target.name == "phone_no") {
-      var val = e.target.value;
-      if (val == "") {
-        document.querySelector(".phone_no.error").innerHTML =
-          "Phone Number is required";
-      } else if (val.length < 8 || val.length > 8) {
-        document.querySelector(".phone_no.error").innerHTML =
-          "Phone number length must be of 8 digits!";
-      } else {
-        document.querySelector(".phone_no.error").innerHTML = "";
-      }
-    }
+    setAuthUser(prev => ({ ...prev, [name]: value }));
   };
-  const updateProfileSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const {
-      name,
-      email,
-      national_id,
-      phone_no,
-      new_password,
-      repeat_password,
-    } = e.target.elements;
-    let userData = {
-      user_id: auth.data ? auth.data.user._id : "",
-      name: name.value,
-      email: email.value,
-      national_id: national_id.value,
-      phone_no: phone_no.value,
-      new_password: new_password.value,
-      repeat_password: repeat_password.value,
-    };
-    //dispatch(updateProfile(userData));
-    postDataAPIBare("update_profile", userData).then(function (res) {
-      let response = res.data;
-      if (response.status == 0) {
-        setErrors(response.errors);
-      } else {
-        swal("Success", "Profile updated successfully!", "success");
-      }
-    });
+    setSaving(true);
+    const { name, email, national_id, phone_no, new_password, repeat_password } = e.target.elements;
+    try {
+      const res = await postDataAPIBare("update_profile", {
+        user_id: auth.data?.user._id,
+        name: name.value, email: email.value, national_id: national_id.value,
+        phone_no: phone_no.value, new_password: new_password.value, repeat_password: repeat_password.value,
+      });
+      if (res.data.status === 0) setErrors(res.data.errors || {});
+      else { swal("Success", "Profile updated successfully!", "success"); setErrors({}); }
+    } catch { swal("Error", "Failed to update profile", "error"); }
+    setSaving(false);
   };
 
-  const handleChangeFile = (file) => {
-    const maxSizeInBytes = 1 * 1024 * 1024; // 1MB
-    if (file.size > maxSizeInBytes) {
-      swal("Warning", "Image size must not be greater than 1MB", "warning");
-      setImage("");
-      Open(false);
-      return;
-    } 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { swal("Warning", "Image must be under 2MB", "warning"); return; }
     setImage(file);
   };
 
-  const handleSubmit = (e) => {
+  const handleUpload = async (e) => {
     e.preventDefault();
-    var formData = new FormData();
-
+    if (!image) return;
+    setUploading(true);
+    const formData = new FormData();
     formData.append("file", image);
-    formData.append("user_id", auth.data ? auth.data.user._id : "");
-
-    // dispatch(updateProfilePic(formData));
-    Open(false);
-    postDataAPIBare("update_profilePic", formData).then(function (res) {
-      let response = res.data;
-      if (response.status == 1) {
-        document
-          .querySelector(".profile_img")
-          .setAttribute("src", "/profilePic/" + response.imagename);
-          dispatch(refreshToken());
-        Open(false);
-        swal("Success", "Profile image updated successfully!", "success");
+    formData.append("user_id", auth.data?.user._id);
+    try {
+      const res = await postDataAPIBare("update_profilePic", formData);
+      if (res.data.status === 1) {
+        dispatch(refreshToken());
+        setShowUpload(false);
+        setImage(null);
+        swal("Success", "Profile picture updated!", "success");
       }
-    });
+    } catch { swal("Error", "Upload failed", "error"); }
+    setUploading(false);
   };
 
-  const [image, setImage] = useState("");
-  const [open, Open] = React.useState(false);
-  const Profile = async () => {
-    Open(true);
-  };
-  const handleClose = () => {
-    Open(false);
-  };
-  const bodyChangeAvatar = () => {
-    return (
-      <div className="paper">
-        <div className="paper-head">
-          <h2 className="paper_h2" id="simple-modal-title">
-            Upload
-          </h2>
-          <span onClick={handleClose}>
-            <i className="fa fa-times" aria-hidden="true"></i>
-          </span>
-        </div>
-        <div className="paper-inner">
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label>Select Profile Picture</label>
-              <input
-                className="form-control"
-                type="file"
-                name="profilePicture"
-                onChange={(e) => handleChangeFile(e.target.files[0])}
-                required
-              />
+  const user = auth.data?.user || {};
+  // Support both Cloudinary URLs (http) and legacy local paths
+  const avatarSrc = user.profile_image
+    ? (user.profile_image.startsWith("http") ? user.profile_image : `/profilePic/${user.profile_image}`)
+    : null;
+  const initials = (user.name || "U").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+
+  return (
+    <div style={{ padding: "32px 24px", maxWidth: 900, margin: "0 auto" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827", margin: 0 }}>My Profile</h2>
+        <p style={{ color: "#6b7280", fontSize: 14, margin: "4px 0 0" }}>Manage your personal information and security settings</p>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 24, alignItems: "start" }}>
+        {/* Left — Avatar Card */}
+        <div>
+          <div style={{ ...cardStyle, textAlign: "center" }}>
+            <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
+              {avatarSrc ? (
+                <img src={avatarSrc} alt={user.name} style={{ width: 96, height: 96, borderRadius: "50%", objectFit: "cover", border: "3px solid #f0e9d6" }} />
+              ) : (
+                <div style={{ width: 96, height: 96, borderRadius: "50%", background: "linear-gradient(135deg, #0e3725, #1a5c3a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, fontWeight: 700, color: "#c9a84c", margin: "0 auto" }}>
+                  {initials}
+                </div>
+              )}
+              <button onClick={() => setShowUpload(true)} style={{ position: "absolute", bottom: 0, right: 0, width: 30, height: 30, borderRadius: "50%", background: "#c9a84c", border: "2px solid #fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="13" height="13" fill="none" stroke="#fff" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </button>
             </div>
-            <button className="btn btn-default">Upload</button>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>{user.name || "—"}</h3>
+            <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px" }}>{user.email || "—"}</p>
+            <div style={{ background: "#f9fafb", borderRadius: 8, padding: "10px 14px", fontSize: 12.5, color: "#374151", textAlign: "left" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ color: "#9ca3af" }}>National ID</span>
+                <span style={{ fontWeight: 600 }}>{user.national_id || "—"}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ color: "#9ca3af" }}>Phone</span>
+                <span style={{ fontWeight: 600 }}>+966 05{user.phone_no || "—"}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#9ca3af" }}>Wallet</span>
+                <span style={{ fontWeight: 600, fontSize: 11, color: user.walletAddress ? "#059669" : "#9ca3af" }}>
+                  {user.walletAddress ? `${user.walletAddress.slice(0, 8)}…` : "Not set"}
+                </span>
+              </div>
+            </div>
+            <Link to="transactions" style={{ display: "block", marginTop: 14, padding: "10px", background: "linear-gradient(135deg, #0e3725, #1a5c3a)", color: "#c9a84c", borderRadius: 9, fontSize: 13, fontWeight: 600, textDecoration: "none", textAlign: "center" }}>
+              View Transactions →
+            </Link>
+          </div>
+
+          {/* Balance Card */}
+          <div style={{ ...cardStyle, background: "linear-gradient(135deg, #0e3725, #1a5c3a)" }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", margin: "0 0 6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Available Balance</p>
+            <p style={{ fontSize: 26, fontWeight: 800, color: "#c9a84c", margin: "0 0 4px" }}>
+              ﷼ {(user.totalBalance || 0).toLocaleString("en-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", margin: 0 }}>Saudi Riyal</p>
+          </div>
+        </div>
+
+        {/* Right — Edit Form */}
+        <div style={cardStyle}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: "0 0 20px", paddingBottom: 16, borderBottom: "1px solid #f3f4f6" }}>
+            Personal Information
+          </h3>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div>
+                <label style={labelStyle}>Full Name</label>
+                <input name="name" type="text" value={authuser.name || ""} onChange={handleInput} style={inputStyle} placeholder="Full Name" />
+                {errors.name && <span style={{ fontSize: 12, color: "#ef4444" }}>{errors.name}</span>}
+              </div>
+              <div>
+                <label style={labelStyle}>Email Address</label>
+                <input name="email" type="email" value={authuser.email || ""} onChange={handleInput} style={inputStyle} placeholder="Email" />
+                {errors.email && <span style={{ fontSize: 12, color: "#ef4444" }}>{errors.email}</span>}
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div>
+                <label style={labelStyle}>National ID</label>
+                <input name="national_id" type="text" value={authuser.national_id || ""} onChange={handleInput} style={inputStyle} placeholder="XXXXXXXXXX" />
+                {errors.national_id && <span style={{ fontSize: 12, color: "#ef4444" }}>{errors.national_id}</span>}
+              </div>
+              <div>
+                <label style={labelStyle}>Phone Number</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <div style={{ ...inputStyle, width: 72, flexShrink: 0, background: "#f3f4f6", color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600 }}>+966 05</div>
+                  <input name="phone_no" type="number" value={authuser.phone_no || ""} onChange={handleInput} style={{ ...inputStyle, flex: 1 }} placeholder="XXXXXXXX" />
+                </div>
+                {errors.phone_no && <span style={{ fontSize: 12, color: "#ef4444" }}>{errors.phone_no}</span>}
+              </div>
+            </div>
+
+            <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 20, marginTop: 4 }}>
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: "#374151", margin: "0 0 16px" }}>Change Password</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div>
+                  <label style={labelStyle}>New Password</label>
+                  <input name="new_password" type="password" style={inputStyle} placeholder="Leave blank to keep current" />
+                  {errors.new_password && <span style={{ fontSize: 12, color: "#ef4444" }}>{errors.new_password}</span>}
+                </div>
+                <div>
+                  <label style={labelStyle}>Confirm Password</label>
+                  <input name="repeat_password" type="password" style={inputStyle} placeholder="Repeat new password" />
+                  {errors.repeat_password && <span style={{ fontSize: 12, color: "#ef4444" }}>{errors.repeat_password}</span>}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+              <button type="submit" disabled={saving} style={{ padding: "12px 28px", background: "linear-gradient(135deg, #c9a84c, #a07a20)", color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}>
+                {saving ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
           </form>
         </div>
       </div>
-    );
-  };
-  return (
-    <div className="main_content">
-      <section className="profile">
-        <div className="container">
-          <h3>My Profile</h3>
-          <div className="inner_profile">
-            <div className="profile_image">
-              <div className="img_edit">
-                <img
-                  className="profile_img"
-                  src={`/profilePic/${
-                    auth.data ? auth?.data?.user?.profile_image : ""
-                  }`}
-                />
-                <a
-                  className="edi_t"
-                  href="javascript:void(0);"
-                  onClick={() => Profile()}
-                >
-                  <img src="/theme/images/edit.png" />
-                </a>
-              </div>
-              <h4>
-                <Link to="transactions">View Transactions</Link>
-              </h4>
-            </div>
-            <div className="profile_details">
-              <form onSubmit={updateProfileSubmit.bind(this)}>
-                <div className="mb-4">
-                  <label className="form-label">Full Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="name"
-                    placeholder="Full Name"
-                    value={authuser.name}
-                    onChange={handleChangeInput}
-                  />
-                  <span className="name error">{errors.name}</span>
-                </div>
-                <div className="mb-4">
-                  <label className="form-label">Email Address</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="email"
-                    placeholder="Email Address"
-                    value={authuser.email}
-                    onChange={handleChangeInput}
-                  />
-                  <span className="email error">{errors.email}</span>
-                </div>
-                <div className="mb-4">
-                  <label className="form-label">National ID</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="national_id"
-                    placeholder="XXXXX"
-                    value={authuser.national_id}
-                    onChange={handleChangeInput}
-                  />
-                  <span className="national_id error">
-                    {errors.national_id}
-                  </span>
-                </div>
-                <div className="mb-4">
-                  <label className="form-label">Phone Number</label>
-                  <div className="PhNumbDivUpdate">
-                    <input
-                      type="number"
-                      className="form-control numbcheck pdR"
-                      name="phone_no_prefix"
-                      placeholder="(05)"
-                      disabled="true"
-                    />
-                    <input
-                      ttype="number"
-                      className="form-control numbcheck pdl"
-                      name="phone_no"
-                      placeholder="XXX-XXX-XX"
-                      value={authuser.phone_no}
-                      onChange={handleChangeInput}
-                    />
-                  </div>
 
-                  <span className="phone_no error">{errors.phone_no}</span>
-                </div>
-                <div className="mb-4">
-                  <label className="form-label">New Password</label>
-                  <input
-                    type="password"
-                    className="form-control"
-                    name="new_password"
-                    placeholder="***********"
-                  />
-                  <span className="error">{errors.new_password}</span>
-                </div>
-                <div className="mb-5">
-                  <label className="form-label">Repeat Password</label>
-                  <input
-                    type="password"
-                    className="form-control"
-                    name="repeat_password"
-                    placeholder="***********"
-                  />
-                  <span className="error">{errors.repeat_password}</span>
-                </div>
-                <div className="mb-4">
-                  <button type="submit" className="btn">
-                    Save Changes
-                  </button>
-                </div>
-              </form>
+      {/* Upload Modal */}
+      {showUpload && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "28px 32px", width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>Update Profile Picture</h3>
+              <button onClick={() => { setShowUpload(false); setImage(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: 20 }}>×</button>
             </div>
+            <form onSubmit={handleUpload}>
+              <div style={{ border: "2px dashed #e5e7eb", borderRadius: 10, padding: "24px", textAlign: "center", marginBottom: 16, background: "#f9fafb" }}>
+                <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: "none" }} id="profile-pic-input" />
+                <label htmlFor="profile-pic-input" style={{ cursor: "pointer" }}>
+                  {image ? (
+                    <div>
+                      <img src={URL.createObjectURL(image)} alt="Preview" style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", margin: "0 auto 8px" }} />
+                      <p style={{ fontSize: 13, color: "#374151", margin: 0 }}>{image.name}</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <svg width="32" height="32" fill="none" stroke="#9ca3af" strokeWidth="1.5" viewBox="0 0 24 24" style={{ margin: "0 auto 8px", display: "block" }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>Click to select image (max 2MB)</p>
+                    </div>
+                  )}
+                </label>
+              </div>
+              <button type="submit" disabled={!image || uploading} style={{ width: "100%", padding: "12px", background: image ? "linear-gradient(135deg, #c9a84c, #a07a20)" : "#e5e7eb", color: image ? "#fff" : "#9ca3af", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: image ? "pointer" : "not-allowed" }}>
+                {uploading ? "Uploading…" : "Upload Picture"}
+              </button>
+            </form>
           </div>
         </div>
-      </section>
-      <div>
-        <Modal
-          open={open}
-          onClose={handleClose}
-          aria-labelledby="simple-modal-title"
-          aria-describedby="simple-modal-description"
-        >
-          {bodyChangeAvatar()}
-        </Modal>
-      </div>
+      )}
     </div>
   );
 };
+
 export default Profile;

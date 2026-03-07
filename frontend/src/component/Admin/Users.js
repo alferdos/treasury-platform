@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
+import { useHistory } from "react-router-dom";
 import { loading } from "../../redux/actions/authAction";
 import { getDataAPI, postDataAPI } from "../../utils/API";
 import { VIEW_CONTRACT } from "../../utils/config";
@@ -31,6 +32,7 @@ const LBL = ({ children }) => <label style={{ fontSize: 12, fontWeight: 600, col
 
 const Users = () => {
   const dispatch = useDispatch();
+  const history = useHistory();
   const [data, setData] = useState([]);
   const [properties, setProperties] = useState([]);
 
@@ -153,6 +155,10 @@ const Users = () => {
                       <Btn variant="success" onClick={() => openFunds(user._id, user.name)}>
                         <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                         Add Funds
+                      </Btn>
+                      <Btn variant="default" onClick={() => history.push(`/admin/user/${user._id}`)} style={{ background: "rgba(59,130,246,0.1)", color: "#2563eb" }}>
+                        <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        View
                       </Btn>
                       <Btn variant="danger" onClick={() => deleteUser(user._id)}>
                         <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
