@@ -98,6 +98,27 @@ router.post("/seed-market-data", async (req, res) => {
   }
 });
 
+// Update any user's password by email
+// POST /api/seed-update-user?key=treasury_seed_2026
+router.post("/seed-update-user", async (req, res) => {
+  if (req.query.key !== SEED_KEY) return res.status(403).json({ error: "Forbidden" });
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: "email and password required" });
+    const hashed = await bcrypt.hash(password, 8);
+    const user = await User.findOneAndUpdate(
+      { email },
+      { password: hashed },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ error: "User not found", email });
+    res.json({ success: true, email, role: user.role, name: user.name });
+  } catch (err) {
+    console.error("Update user error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Reset admin user — deletes ALL role:1 users then creates fresh admin
 // POST /api/seed-admin?key=treasury_seed_2026
 router.post("/seed-admin", async (req, res) => {
