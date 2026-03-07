@@ -13,8 +13,7 @@ import Users from "../Admin/Users";
 import RequestFund from "../Admin/RequestFund";
 import AdminProperties from "../Admin/AdminProperties";
 import EditProperty from "../Admin/EditProperty";
-import AdminHeader from "../Includes/AdminHeader";
-import Footer from "../Includes/Footer";
+
 
 //admin layout component
 const DashboardLayout = () => {
@@ -35,10 +34,8 @@ const DashboardLayout = () => {
 		window.scrollTo(0, 0);
     }, [auth]);
 	return (
-		<div className="dashboard">
-			<AdminHeader />
-			<div className="right-panal">
-				<Switch>
+		<div>
+		<Switch>
 					<Route exact path="/admin/dashboard">
 						<AdminDashboard />
 					</Route>
@@ -72,9 +69,7 @@ const DashboardLayout = () => {
 					<Route exact path="/admin/property/:id">
 						<EditProperty />
 					</Route>
-				</Switch>
-			</div>
-			<Footer />
+		</Switch>
 		</div>
 	);
 };

@@ -1,304 +1,233 @@
 import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { loading } from "../../redux/actions/authAction";
 import { getDataAPI, postDataAPI } from "../../utils/API";
 import { VIEW_CONTRACT } from "../../utils/config";
 import swal from "sweetalert";
-import { useHistory, Link } from "react-router-dom";
-import Modal from "@material-ui/core/Modal";
+import AdminShell from "./AdminShell";
+
+/* ── design tokens ── */
+const card = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 8px rgba(0,0,0,0.07)", overflow: "hidden" };
+const TH = { padding: "11px 16px", fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap" };
+const TD = { padding: "14px 16px", fontSize: 13.5, color: "#374151", borderBottom: "1px solid #f3f4f6", verticalAlign: "middle" };
+const pill = (c) => ({ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: c === "gold" ? "rgba(201,168,76,0.12)" : "rgba(107,114,128,0.1)", color: c === "gold" ? "#92700a" : "#6b7280" });
+const Btn = ({ variant = "default", onClick, children, type = "button", full }) => {
+  const styles = {
+    primary: { background: "#1a2035", color: "#fff" },
+    success: { background: "#16a34a", color: "#fff" },
+    danger: { background: "#fee2e2", color: "#dc2626" },
+    default: { background: "#f3f4f6", color: "#374151" },
+  };
+  return (
+    <button type={type} onClick={onClick} style={{ border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, width: full ? "100%" : "auto", justifyContent: full ? "center" : "flex-start", ...styles[variant] }}>
+      {children}
+    </button>
+  );
+};
+const overlay = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", backdropFilter: "blur(3px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" };
+const modalBox = { background: "#fff", borderRadius: 14, width: "100%", maxWidth: 440, padding: "28px 32px", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", position: "relative" };
+const inputS = { width: "100%", padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13.5, color: "#111827", background: "#f9fafb", outline: "none", boxSizing: "border-box", marginTop: 6 };
+const LBL = ({ children }) => <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block" }}>{children}</label>;
 
 const Users = () => {
-	const dispatch = useDispatch();
-	const { auth } = useSelector((state) => state);
-	const [data, setData] = useState("");
-	const [senderror, setSendError] = useState("");
-	const [sendtrans, setSendTrans] = useState(0);
+  const dispatch = useDispatch();
+  const [data, setData] = useState([]);
+  const [properties, setProperties] = useState([]);
 
-	// Send Units modal
-	const [open, setOpen] = React.useState(false);
-	const [userid, setUserId] = useState("");
-	const [properties, setProperties] = useState([]);
+  // Send Units
+  const [sendOpen, setSendOpen] = useState(false);
+  const [sendUserId, setSendUserId] = useState("");
+  const [sendPropertyId, setSendPropertyId] = useState("");
+  const [sendUnits, setSendUnits] = useState("");
+  const [sendTxHash, setSendTxHash] = useState("");
+  const [sendError, setSendError] = useState("");
 
-	// Add Funds modal
-	const [fundsOpen, setFundsOpen] = useState(false);
-	const [fundsUserId, setFundsUserId] = useState("");
-	const [fundsUserName, setFundsUserName] = useState("");
-	const [fundsAmount, setFundsAmount] = useState("");
-	const [fundsError, setFundsError] = useState("");
-	const [fundsSuccess, setFundsSuccess] = useState("");
+  // Add Funds
+  const [fundsOpen, setFundsOpen] = useState(false);
+  const [fundsUserId, setFundsUserId] = useState("");
+  const [fundsUserName, setFundsUserName] = useState("");
+  const [fundsAmount, setFundsAmount] = useState("");
+  const [fundsError, setFundsError] = useState("");
+  const [fundsSuccess, setFundsSuccess] = useState("");
 
-	const handleClose = () => {
-		setOpen(false);
-		setSendTrans(0);
-		setSendError("");
-	};
+  const loadUsers = async () => {
+    const res = await getDataAPI("/get_user?role=0");
+    if (res.data) setData(res.data);
+  };
+  const loadProperties = async () => {
+    const res = await getDataAPI("/get_property?status=1");
+    if (res.data && res.data.data) setProperties(res.data.data);
+    else if (Array.isArray(res.data)) setProperties(res.data);
+  };
 
-	const handleFundsClose = () => {
-		setFundsOpen(false);
-		setFundsAmount("");
-		setFundsError("");
-		setFundsSuccess("");
-	};
+  useEffect(() => { loadUsers(); loadProperties(); }, []);
 
-	async function getUser() {
-		const res = await getDataAPI("/get_user?role=0");
-		setData(res.data);
-	}
+  /* Send Units */
+  const openSend = (id) => { setSendUserId(id); setSendPropertyId(""); setSendUnits(""); setSendTxHash(""); setSendError(""); setSendOpen(true); };
+  const sendSubmit = (e) => {
+    e.preventDefault();
+    dispatch(loading(true));
+    postDataAPI("sendTokenByAdmin", { units: sendUnits, propertyId: sendPropertyId, userId: sendUserId })
+      .then((res) => {
+        dispatch(loading(false));
+        if (res.data.status === 1) setSendTxHash(res.data.tx.hash);
+        else setSendError(res.data.errors?.message || "Failed");
+      })
+      .catch(() => { dispatch(loading(false)); setSendError("Something went wrong"); });
+  };
 
-	async function getActiveProperties() {
-		const res = await getDataAPI("/get_property?status=1");
-		if (res.data && res.data.data) {
-			setProperties(res.data.data);
-		} else if (Array.isArray(res.data)) {
-			setProperties(res.data);
-		}
-	}
+  /* Add Funds */
+  const openFunds = (id, name) => { setFundsUserId(id); setFundsUserName(name); setFundsAmount(""); setFundsError(""); setFundsSuccess(""); setFundsOpen(true); };
+  const fundsSubmit = (e) => {
+    e.preventDefault();
+    if (!fundsAmount || isNaN(fundsAmount) || Number(fundsAmount) <= 0) { setFundsError("Enter a valid amount greater than 0"); return; }
+    dispatch(loading(true));
+    postDataAPI("addFunds", { userId: fundsUserId, amount: Number(fundsAmount) })
+      .then((res) => {
+        dispatch(loading(false));
+        if (res.data.status === 1) { setFundsSuccess(res.data.message || `﷼${Number(fundsAmount).toLocaleString()} added successfully`); setFundsAmount(""); }
+        else setFundsError(res.data.errors?.message || "Failed to add funds");
+      })
+      .catch(() => { dispatch(loading(false)); setFundsError("Something went wrong"); });
+  };
 
-	useEffect(() => {
-		getUser();
-		getActiveProperties();
-	}, []);
+  /* Delete */
+  const deleteUser = (id) => {
+    swal({ title: "Delete User", text: "This cannot be undone.", icon: "warning", buttons: ["Cancel", "Delete"], dangerMode: true })
+      .then((ok) => { if (ok) postDataAPI("/delete_user", { user_id: id }).then(loadUsers); });
+  };
 
-	const sendToken = async (user_id) => {
-		setUserId(user_id);
-		setSendTrans(0);
-		setSendError("");
-		setOpen(true);
-	};
+  return (
+    <AdminShell pageTitle="User Management">
+      {/* Stats */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
+        {[
+          { label: "Total Users", value: data.length, color: "#c9a84c" },
+          { label: "Admins", value: data.filter((u) => u.role === 1).length, color: "#1a2035" },
+        ].map((s) => (
+          <div key={s.label} style={{ ...card, padding: "18px 24px", minWidth: 150 }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</p>
+            <p style={{ margin: "6px 0 0", fontSize: 30, fontWeight: 800, color: s.color }}>{s.value}</p>
+          </div>
+        ))}
+      </div>
 
-	const openAddFunds = (user_id, user_name) => {
-		setFundsUserId(user_id);
-		setFundsUserName(user_name);
-		setFundsAmount("");
-		setFundsError("");
-		setFundsSuccess("");
-		setFundsOpen(true);
-	};
+      {/* Table */}
+      <div style={card}>
+        <div style={{ padding: "18px 24px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>All Users</h2>
+          <span style={{ fontSize: 12, color: "#9ca3af" }}>{data.length} records</span>
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>{["#", "User", "Email", "Phone", "Role", "Actions"].map((h) => <th key={h} style={TH}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {data.length === 0 ? (
+                <tr><td colSpan={6} style={{ ...TD, textAlign: "center", padding: 40, color: "#9ca3af" }}>No users found</td></tr>
+              ) : data.map((user, i) => (
+                <tr key={user._id}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#fafafa")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  style={{ transition: "background 0.15s" }}
+                >
+                  <td style={{ ...TD, color: "#9ca3af", width: 40 }}>{i + 1}</td>
+                  <td style={TD}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#c9a84c,#7a5c10)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13, flexShrink: 0, overflow: "hidden" }}>
+                        {user.name?.charAt(0).toUpperCase()}
+                      </div>
+                      <span style={{ fontWeight: 600, color: "#111827" }}>{user.name}</span>
+                    </div>
+                  </td>
+                  <td style={TD}>{user.email}</td>
+                  <td style={TD}>{user.phone_no || "—"}</td>
+                  <td style={TD}><span style={pill("gold")}>{user.role === 1 ? "Admin" : "User"}</span></td>
+                  <td style={TD}>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <Btn variant="default" onClick={() => openSend(user._id)}>
+                        <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Send Units
+                      </Btn>
+                      <Btn variant="success" onClick={() => openFunds(user._id, user.name)}>
+                        <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        Add Funds
+                      </Btn>
+                      <Btn variant="danger" onClick={() => deleteUser(user._id)}>
+                        <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                        Delete
+                      </Btn>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-	const deleteUser = async (user_id) => {
-		swal({
-			title: "Are you sure?",
-			text: "You want to delete this record?",
-			icon: "warning",
-			buttons: [
-			  'No',
-			  'Yes'
-			],
-			dangerMode: true,
-		}).then(async function(isConfirm) {
-			if (isConfirm) {
-				await postDataAPI("/delete_user", {user_id});
-				getUser();
-			}
-		});
-	};
+      {/* ── Send Units Modal ── */}
+      {sendOpen && (
+        <div style={overlay} onClick={() => setSendOpen(false)}>
+          <div style={modalBox} onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setSendOpen(false)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: 22, lineHeight: 1 }}>×</button>
+            <h3 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: "#111827" }}>Send Units</h3>
+            <p style={{ margin: "0 0 20px", fontSize: 13, color: "#9ca3af" }}>Assign property tokens to a user</p>
+            {sendTxHash ? (
+              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "14px 16px", fontSize: 13, color: "#15803d" }}>
+                ✓ Units sent!{" "}
+                <a href={`${VIEW_CONTRACT}tx/${sendTxHash}`} target="_blank" rel="noreferrer" style={{ color: "#15803d", fontWeight: 600 }}>View transaction →</a>
+              </div>
+            ) : (
+              <form onSubmit={sendSubmit}>
+                {sendError && <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#dc2626", marginBottom: 14 }}>{sendError}</div>}
+                <div style={{ marginBottom: 14 }}>
+                  <LBL>Select Property</LBL>
+                  <select style={inputS} value={sendPropertyId} onChange={(e) => setSendPropertyId(e.target.value)} required>
+                    <option value="">— Choose a property —</option>
+                    {properties.map((p) => <option key={p._id} value={p._id}>{p.title}</option>)}
+                  </select>
+                </div>
+                <div style={{ marginBottom: 22 }}>
+                  <LBL>Number of Units</LBL>
+                  <input style={inputS} type="number" min="1" placeholder="e.g. 100" value={sendUnits} onChange={(e) => setSendUnits(e.target.value)} required />
+                </div>
+                <Btn type="submit" variant="primary" full>Send Units</Btn>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
-	const sendTokenSubmit = async (e) => {
-		e.preventDefault();
-		dispatch(loading(true));
-		const { units, propertyId, userId } = e.target.elements;
-		let details = {
-			units: units.value,
-			propertyId: propertyId.value,
-			userId: userId.value,
-		};
-		postDataAPI("sendTokenByAdmin", details).then(function (res) {
-			dispatch(loading(false));
-			let response = res.data;
-			if(response.status==1){
-				setSendTrans(response.tx.hash);
-			}
-			else{
-				setSendError(response.errors);
-			}
-		})
-		.catch(function (error) {
-			console.log(error);
-			dispatch(loading(false));
-		});
-	};
-
-	const addFundsSubmit = async (e) => {
-		e.preventDefault();
-		setFundsError("");
-		setFundsSuccess("");
-		if (!fundsAmount || isNaN(fundsAmount) || Number(fundsAmount) <= 0) {
-			setFundsError("Please enter a valid amount greater than 0");
-			return;
-		}
-		dispatch(loading(true));
-		postDataAPI("addFunds", { userId: fundsUserId, amount: Number(fundsAmount) }).then(function (res) {
-			dispatch(loading(false));
-			let response = res.data;
-			if (response.status == 1) {
-				setFundsSuccess(response.message || `Successfully added ${fundsAmount} SAR to ${fundsUserName}'s balance.`);
-				setFundsAmount("");
-			} else {
-				setFundsError(response.errors?.message || "Failed to add funds. Please try again.");
-			}
-		}).catch(function (error) {
-			dispatch(loading(false));
-			setFundsError("An error occurred. Please try again.");
-			console.log(error);
-		});
-	};
-
-	const bodySendUnits = () => {
-		return (
-			<div className="paper">
-				<div className="paper-head">
-					<h2 className="paper_h2" id="simple-modal-title">
-						Send Unit
-					</h2>
-					<span onClick={handleClose}>
-						<i className="fa fa-times" aria-hidden="true"></i>
-					</span>
-				</div>
-				<div className="paper-inner">
-				{(sendtrans)?
-				(
-					<div className="alert alert-success text-center">Unit sent to user successfully. <br/>Click <a href={`${VIEW_CONTRACT}tx/${sendtrans}`} target="_blank">Here</a> to view the transaction!</div>
-				):(
-					<form onSubmit={sendTokenSubmit.bind(this)}>
-						<input type="hidden" name="userId" value={userid}/>
-						<div className="mb-3">
-							<label>Select Property</label>
-							<select className="form-control" name="propertyId">
-								<option value="">--Select--</option>
-								{
-									properties.length > 0 ? properties.map((p, i) => (
-										<option key={i} value={p._id}>{p.title}</option>
-									)) : <option disabled>No active properties available</option>
-								}
-							</select>
-							<span className="error">{senderror && senderror.propertyId}</span>
-						</div>
-						<div className="mb-3">
-							<label>Enter Units</label>
-							<input
-								className="form-control"
-								type="number"
-								min="1"
-								name="units"
-							/>
-							<span className="error">{senderror && senderror.units}</span>
-						</div>
-						<button className="btn btn-default">Send</button>
-					</form>
-				)}
-				</div>
-			</div>
-		);
-	};
-
-	const bodyAddFunds = () => {
-		return (
-			<div className="paper">
-				<div className="paper-head">
-					<h2 className="paper_h2" id="add-funds-modal-title">
-						Add Funds
-					</h2>
-					<span onClick={handleFundsClose}>
-						<i className="fa fa-times" aria-hidden="true"></i>
-					</span>
-				</div>
-				<div className="paper-inner">
-					{fundsSuccess ? (
-						<div className="alert alert-success text-center">{fundsSuccess}</div>
-					) : (
-						<form onSubmit={addFundsSubmit}>
-							<div className="mb-3">
-								<label>User</label>
-								<input
-									className="form-control"
-									type="text"
-									value={fundsUserName}
-									disabled
-									style={{ background: "#f5f5f5", color: "#666" }}
-								/>
-							</div>
-							<div className="mb-3">
-								<label>Amount (SAR ﷼)</label>
-								<input
-									className="form-control"
-									type="number"
-									min="1"
-									step="0.01"
-									placeholder="Enter amount in SAR"
-									value={fundsAmount}
-									onChange={(e) => setFundsAmount(e.target.value)}
-								/>
-								{fundsError && <span className="error" style={{ color: "red", fontSize: "13px" }}>{fundsError}</span>}
-							</div>
-							<button className="btn btn-default" type="submit">Add Funds</button>
-						</form>
-					)}
-				</div>
-			</div>
-		);
-	};
-
-	return (
-		<div>
-			<div className="main_content">
-				<section className="listing_banner">
-					<div className="container">
-					<div className="table_scroll">
-						<table className="table propertyListTable">
-							<thead>
-								<tr>
-									<th scope="col">#</th>
-									<th scope="col">Image</th>
-									<th scope="col">Name</th>
-									<th scope="col">Email</th>
-									<th scope="col">Phone</th>
-									<th scope="col">Role</th>
-									<th scope="col">Action</th>
-								</tr>
-							</thead>
-							<tbody>
-							{
-								(data.length==0)?(<tr><td colSpan='100%'><center>Record is empty!</center></td></tr>):""
-							}
-							{data ? data.map((user, index) => (
-								<tr key={index}>
-									<td scope="row">{index+1}</td>
-									<td><img src={`../profilePic/${user.profile_image}`} /></td>
-									<td>{user.name}</td>
-									<td>{user.email}</td>
-									<td>{user.phone_no}</td>
-									<td>{(user.role)?( <>Admin</> ):( <>User</> )}</td>
-									<td className="btn_div">
-										<button className="btn send1 btn-default" onClick={()=>sendToken(user._id)}>Send Units</button>
-										<button className="btn btn-default" style={{background:"#4a7c59", color:"#fff", marginLeft:"4px"}} onClick={()=>openAddFunds(user._id, user.name)}>Add Funds</button>
-										<button className="btn del1 btn-default" onClick={()=>deleteUser(user._id)}>Delete</button>
-									</td>
-								</tr>
-							)) : ""}
-							</tbody>
-						</table>
-						</div>
-					</div>
-				</section>
-				<div>
-					<Modal
-						open={open}
-						onClose={handleClose}
-						aria-labelledby="simple-modal-title"
-						aria-describedby="simple-modal-description">
-						{bodySendUnits()}
-					</Modal>
-					<Modal
-						open={fundsOpen}
-						onClose={handleFundsClose}
-						aria-labelledby="add-funds-modal-title"
-						aria-describedby="add-funds-modal-description">
-						{bodyAddFunds()}
-					</Modal>
-				</div>
-			</div>
-		</div>
-	);
+      {/* ── Add Funds Modal ── */}
+      {fundsOpen && (
+        <div style={overlay} onClick={() => setFundsOpen(false)}>
+          <div style={modalBox} onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setFundsOpen(false)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: 22, lineHeight: 1 }}>×</button>
+            <h3 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: "#111827" }}>Add Funds</h3>
+            <p style={{ margin: "0 0 20px", fontSize: 13, color: "#9ca3af" }}>Credit SAR balance to user account</p>
+            {fundsSuccess ? (
+              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "14px 16px", fontSize: 13, color: "#15803d" }}>✓ {fundsSuccess}</div>
+            ) : (
+              <form onSubmit={fundsSubmit}>
+                {fundsError && <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#dc2626", marginBottom: 14 }}>{fundsError}</div>}
+                <div style={{ marginBottom: 14 }}>
+                  <LBL>User</LBL>
+                  <input style={{ ...inputS, background: "#f3f4f6", color: "#6b7280" }} value={fundsUserName} readOnly />
+                </div>
+                <div style={{ marginBottom: 22 }}>
+                  <LBL>Amount (SAR ﷼)</LBL>
+                  <input style={inputS} type="number" min="1" step="0.01" placeholder="e.g. 5000" value={fundsAmount} onChange={(e) => setFundsAmount(e.target.value)} required />
+                </div>
+                <Btn type="submit" variant="success" full>Add Funds</Btn>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+    </AdminShell>
+  );
 };
 
 export default Users;
