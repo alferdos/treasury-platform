@@ -152,15 +152,7 @@ const EditProperty = () => {
 									<span className="tokenInfoLabel">Decimals</span>
 									<span className="tokenInfoValue">{blockchaindata.decimals}</span>
 								</div>
-								<div className="tokenInfoRow">
-									<span className="tokenInfoLabel">Block Number</span>
-									<span className="tokenInfoValue">{blockchaindata.blockNumber ? blockchaindata.blockNumber.toLocaleString() : '—'}</span>
-								</div>
-								<div className="tokenInfoRow">
-									<span className="tokenInfoLabel">Gas Used</span>
-									<span className="tokenInfoValue">{blockchaindata.gasUsed ? blockchaindata.gasUsed.toLocaleString() : '—'}</span>
-								</div>
-								<div className="tokenInfoRow">
+							<div className="tokenInfoRow">
 									<span className="tokenInfoLabel">Deployed At</span>
 									<span className="tokenInfoValue">{new Date(blockchaindata.createdAt).toLocaleString()}</span>
 								</div>
