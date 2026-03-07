@@ -17,8 +17,15 @@ const blockchainSchema = mongoose.Schema(
 		totalTokenSupply: {
 			type: String,
 		},
+		contractAddress: {
+			type: String,
+		},
 		transactionHash: {
 			type: String,
+		},
+		mock: {
+			type: Boolean,
+			default: false,
 		},
 	},
 

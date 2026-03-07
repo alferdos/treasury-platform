@@ -10,6 +10,37 @@ const address = process.env.FROM_ADDRESS;
 const privKey = process.env.PRIVATE_KEY;
 const rpcUrl = process.env.BSC_NET;
 
+// ─── Mock Deployment Helper ───────────────────────────────────────────────────
+// When FROM_ADDRESS / PRIVATE_KEY / BSC_NET are not set (dev / staging), the
+// controller falls back to a deterministic mock that generates realistic-looking
+// BSC TestNet addresses and tx hashes without spending real BNB gas.
+const isMockMode = !address || !privKey || !rpcUrl;
+
+function generateMockHex(length) {
+	const chars = '0123456789abcdef';
+	let result = '0x';
+	for (let i = 0; i < length; i++) {
+		result += chars[Math.floor(Math.random() * chars.length)];
+	}
+	return result;
+}
+
+function mockDeploy(contractName, symbol, totalsupply) {
+	const contractAddress = generateMockHex(40); // 20-byte address
+	const transactionHash  = generateMockHex(64); // 32-byte tx hash
+	const blockNumber      = Math.floor(Math.random() * 5_000_000) + 30_000_000;
+	console.log(`[Mock Deploy] Contract "${contractName}" (${symbol}, supply=${totalsupply}) → ${contractAddress}`);
+	return {
+		contractAddress,
+		transactionHash,
+		blockNumber,
+		gasUsed: 2_100_000,
+		status: true,
+		mock: true,
+	};
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const deployCtrl = {
 	// Deploy contract
 	deploy: async (req, res) => {
@@ -349,39 +380,52 @@ const deployCtrl = {
 					"type": "function"
 				}
 			];
-			const incrementer = new web3.eth.Contract(abi);
-			const incrementerTx = incrementer.deploy({
-				data: bytecode,
-				arguments: [contractName, web3.utils.toWei(`${totalsupply}`, 'ether'), symbol],
-			});
 
-			const createTransaction = await web3.eth.accounts.signTransaction(
-				{
-					from: address,
-					data: incrementerTx.encodeABI(),
-					gas: 9000000,
-					nonce: await web3.eth.getTransactionCount(address, "pending"),
-				},
-				privKey,
-			);
+			let createReceipt;
 
-			const createReceipt = await web3.eth.sendSignedTransaction(
-				createTransaction.rawTransaction,
-			);
+			if (isMockMode) {
+				// ── Mock path: no wallet / RPC required ─────────────────────────
+				createReceipt = mockDeploy(contractName, symbol, totalsupply);
+			} else {
+				// ── Live path: deploy real BEP-20 on BSC TestNet ────────────────
+				const web3 = new Web3(rpcUrl);
+				const incrementer = new web3.eth.Contract(abi);
+				const incrementerTx = incrementer.deploy({
+					data: bytecode,
+					arguments: [contractName, web3.utils.toWei(`${totalsupply}`, 'ether'), symbol],
+				});
+				const createTransaction = await web3.eth.accounts.signTransaction(
+					{
+						from: address,
+						data: incrementerTx.encodeABI(),
+						gas: 9000000,
+						nonce: await web3.eth.getTransactionCount(address, "pending"),
+					},
+					privKey,
+				);
+				createReceipt = await web3.eth.sendSignedTransaction(
+					createTransaction.rawTransaction,
+				);
+			}
 
-			let insertData={
-				propertyId, 
-				contractName, 
-				symbol, 
-				decimals: 18, 
+			// Fix: store transactionHash (not contractAddress) in the hash field
+			let insertData = {
+				propertyId,
+				contractName,
+				symbol,
+				decimals: 18,
 				totalTokenSupply: totalsupply,
-				transactionHash: createReceipt.contractAddress,
-				// transactionHash: createReceipt.transactionHash
+				contractAddress: createReceipt.contractAddress,
+				transactionHash: createReceipt.transactionHash,
+				mock: !!createReceipt.mock,
 			};
 			let blockchain = new Blockchain(insertData);
 			blockchain.save();
-			await Property.updateOne({_id: propertyId}, {totalTokenSupply: totalsupply});
-			res.json({ status: 1, receipt: createReceipt });
+			await Property.updateOne({_id: propertyId}, {
+				totalTokenSupply: totalsupply,
+				contract_address: createReceipt.contractAddress,
+			});
+			res.json({ status: 1, receipt: createReceipt, mock: isMockMode });
 		} catch (err) {
 			return res.status(500).json({ msg: err.message });
 		}
