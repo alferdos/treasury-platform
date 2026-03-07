@@ -243,10 +243,26 @@ span.error {
 	border-radius: 20px;
 	letter-spacing: 0.05em;
 }
+.tokenBadgeVerified {
+	background: #1a7a4a;
+	color: #fff;
+	font-size: 0.72rem;
+	font-weight: bold;
+	padding: 4px 12px;
+	border-radius: 20px;
+	letter-spacing: 0.05em;
+	white-space: nowrap;
+}
+.tokenNetwork {
+	font-size: 0.78rem;
+	color: #888;
+	margin-left: auto;
+	white-space: nowrap;
+}
 .tokenInfoGrid {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
 }
 .tokenInfoRow {
 	display: flex;
@@ -256,6 +272,9 @@ span.error {
 	background: #fff;
 	border: 1px solid #ede8dc;
 	border-radius: 6px;
+}
+.tokenInfoRowFull {
+	grid-column: 1 / -1;
 }
 .tokenInfoLabel {
 	font-size: 0.72rem;

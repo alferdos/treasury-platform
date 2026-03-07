@@ -29,13 +29,19 @@ function generateMockHex(length) {
 function mockDeploy(contractName, symbol, totalsupply) {
 	const contractAddress = generateMockHex(40); // 20-byte address
 	const transactionHash  = generateMockHex(64); // 32-byte tx hash
-	const blockNumber      = Math.floor(Math.random() * 5_000_000) + 30_000_000;
+	// Realistic BSC TestNet block numbers (current range ~45M-47M)
+	const blockNumber      = Math.floor(Math.random() * 500_000) + 46_500_000;
+	// Realistic gas used for ERC-20 deployment (1.8M–2.1M range)
+	const gasUsed          = Math.floor(Math.random() * 300_000) + 1_800_000;
 	console.log(`[Mock Deploy] Contract "${contractName}" (${symbol}, supply=${totalsupply}) → ${contractAddress}`);
 	return {
 		contractAddress,
 		transactionHash,
 		blockNumber,
-		gasUsed: 2_100_000,
+		gasUsed,
+		chainId: 97,
+		network: 'BSC Testnet',
+		tokenStandard: 'BEP-20',
 		status: true,
 		mock: true,
 	};
@@ -409,17 +415,22 @@ const deployCtrl = {
 				);
 			}
 
-			// Fix: store transactionHash (not contractAddress) in the hash field
-			let insertData = {
-				propertyId,
-				contractName,
-				symbol,
-				decimals: 18,
-				totalTokenSupply: totalsupply,
-				contractAddress: createReceipt.contractAddress,
-				transactionHash: createReceipt.transactionHash,
-				mock: !!createReceipt.mock,
-			};
+				// Fix: store transactionHash (not contractAddress) in the hash field
+				let insertData = {
+					propertyId,
+					contractName,
+					symbol,
+					decimals: 18,
+					totalTokenSupply: totalsupply,
+					contractAddress: createReceipt.contractAddress,
+					transactionHash: createReceipt.transactionHash,
+					blockNumber: createReceipt.blockNumber || null,
+					gasUsed: createReceipt.gasUsed || null,
+					chainId: createReceipt.chainId || 97,
+					network: createReceipt.network || 'BSC Testnet',
+					tokenStandard: createReceipt.tokenStandard || 'BEP-20',
+					mock: !!createReceipt.mock,
+				};
 			let blockchain = new Blockchain(insertData);
 			blockchain.save();
 			await Property.updateOne({_id: propertyId}, {

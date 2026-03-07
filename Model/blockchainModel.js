@@ -23,6 +23,24 @@ const blockchainSchema = mongoose.Schema(
 		transactionHash: {
 			type: String,
 		},
+		blockNumber: {
+			type: Number,
+		},
+		gasUsed: {
+			type: Number,
+		},
+		chainId: {
+			type: Number,
+			default: 97,
+		},
+		network: {
+			type: String,
+			default: 'BSC Testnet',
+		},
+		tokenStandard: {
+			type: String,
+			default: 'BEP-20',
+		},
 		mock: {
 			type: Boolean,
 			default: false,
