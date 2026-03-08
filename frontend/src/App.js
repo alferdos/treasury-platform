@@ -64,6 +64,7 @@ function App() {
 				<Route component={AdminLayout} path="/admin/requestFund" exact/>
 				<Route component={AdminLayout} path="/admin/properties" exact/>
 				<Route component={AdminLayout} path="/admin/property/:id" exact/>
+				<Route component={AdminLayout} path="/admin/user/:userId" exact/>
 
 
 			</div>
