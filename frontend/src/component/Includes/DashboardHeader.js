@@ -115,8 +115,8 @@ const DashboardHeader = () => {
                   <img
                     src={auth.data?.user?.profile_image && auth.data.user.profile_image.startsWith('http')
                       ? auth.data.user.profile_image
-                      : `https://ui-avatars.com/api/?name=${encodeURIComponent(auth.data?.user?.name || 'U')}&background=0e3725&color=f8b602&size=40&bold=true`}
-                    onError={e => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(auth.data?.user?.name || 'U')}&background=0e3725&color=f8b602&size=40&bold=true`; }}
+                      : `https://res.cloudinary.com/dfzwynbsl/image/upload/w_40,h_40,c_fill,r_max,co_rgb:f8b602,l_text:Arial_20_bold:${(auth.data?.user?.name || 'U').charAt(0).toUpperCase()}/fl_layer_apply/v1773045169/avatar_base.png`}
+                    onError={e => { e.target.src = `https://res.cloudinary.com/dfzwynbsl/image/upload/w_40,h_40,c_fill,r_max,co_rgb:f8b602,l_text:Arial_20_bold:U/fl_layer_apply/v1773045169/avatar_base.png`; }}
                     style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', marginRight: '6px' }}
                     alt="profile"
                   />
