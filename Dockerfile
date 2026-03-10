@@ -19,6 +19,7 @@ COPY Model/ ./Model/
 COPY Controller/ ./Controller/
 COPY config/ ./config/
 COPY validation/ ./validation/
+COPY middleware/ ./middleware/
 COPY propertyCtrl.js ./
 
 # Set environment variables (Railway provides CONNECTION_URL via env)
@@ -28,5 +29,5 @@ ENV PORT=8080
 EXPOSE 8080
 
 # Start the server
-# Build timestamp: 2026-03-05T14:50:00Z
+# Build timestamp: 2026-03-10T05:00:00Z
 CMD ["node", "server.js"]
