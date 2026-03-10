@@ -11,7 +11,9 @@ const Transaction = require("../Model/transactionModel");
 const ChartData = require("../Model/chartDataModel");
 const Blockchain = require("../Model/blockchainModel");
 
-const SEED_KEY = "treasury_seed_2026";
+// F-03 FIX: SEED_KEY moved to environment variable. Set SEED_KEY in Railway env vars.
+// This route is disabled in production unless SEED_KEY env var is explicitly set.
+const SEED_KEY = process.env.SEED_KEY;
 
 const PROPERTIES = [
   { id: "69a97fc4b87387d85b6ddba6", basePrice: 1000, tokenName: "Al Narjes Residential Token",   symbol: "ANRT", supply: 15000 },
@@ -120,12 +122,18 @@ router.post("/seed-update-user", async (req, res) => {
 });
 
 // Reset admin user — deletes ALL role:1 users then creates fresh admin
-// POST /api/seed-admin?key=treasury_seed_2026
+// POST /api/seed-admin?key=<SEED_KEY env var>
+// Admin email and password are read from ADMIN_EMAIL and ADMIN_PASSWORD env vars.
 router.post("/seed-admin", async (req, res) => {
+  // Disabled entirely if SEED_KEY is not set in environment
+  if (!SEED_KEY) return res.status(404).json({ error: "Not found" });
   if (req.query.key !== SEED_KEY) return res.status(403).json({ error: "Forbidden" });
   try {
-    const email = "admin@treasury.sa";
-    const plainPassword = "NMf@2016";
+    const email = process.env.ADMIN_EMAIL;
+    const plainPassword = process.env.ADMIN_PASSWORD;
+    if (!email || !plainPassword) {
+      return res.status(400).json({ error: "ADMIN_EMAIL and ADMIN_PASSWORD env vars must be set" });
+    }
     const hashed = await bcrypt.hash(plainPassword, 8);
 
     // Remove ALL existing admin-role users to start clean

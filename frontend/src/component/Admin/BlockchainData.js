@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { getDataAPI } from "../../utils/API";
+import { useSelector } from "react-redux";
+import { getDataAPIAuth } from "../../utils/API";
 import AdminShell from "./AdminShell";
 
 const BSCSCAN = "https://testnet.bscscan.com";
@@ -23,6 +24,8 @@ const StatusBadge = ({ status }) => {
 };
 
 const BlockchainData = () => {
+  const auth = useSelector(state => state.auth);
+  const token = auth?.data?.accesstoken || auth?.data?.access_token;
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -32,7 +35,7 @@ const BlockchainData = () => {
     setLoading(true);
     setError("");
     try {
-      const res = await getDataAPI("/getBlockchainOverview");
+      const res = await getDataAPIAuth("/getBlockchainOverview", token);
       if (res.data && res.data.status === 1) {
         setData(res.data.data);
       } else {

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useHistory } from "react-router-dom";
 import { loading } from "../../redux/actions/authAction";
-import { getDataAPI, postDataAPI } from "../../utils/API";
+import { getDataAPI, getDataAPIAuth, postDataAPI } from "../../utils/API";
 import { VIEW_CONTRACT } from "../../utils/config";
 import swal from "sweetalert";
 import AdminShell from "./AdminShell";
@@ -33,6 +33,8 @@ const LBL = ({ children }) => <label style={{ fontSize: 12, fontWeight: 600, col
 const Users = () => {
   const dispatch = useDispatch();
   const history = useHistory();
+  const auth = useSelector(state => state.auth);
+  const token = auth?.data?.accesstoken || auth?.data?.access_token;
   const [data, setData] = useState([]);
   const [properties, setProperties] = useState([]);
 
@@ -53,11 +55,11 @@ const Users = () => {
   const [fundsSuccess, setFundsSuccess] = useState("");
 
   const loadUsers = async () => {
-    const res = await getDataAPI("/get_user?role=0");
+    const res = await getDataAPIAuth("/get_user?role=0", token);
     if (res.data) setData(res.data);
   };
   const loadProperties = async () => {
-    const res = await getDataAPI("/get_property?status=1");
+    const res = await getDataAPIAuth("/get_property?status=1", token);
     if (res.data && res.data.data) setProperties(res.data.data);
     else if (Array.isArray(res.data)) setProperties(res.data);
   };
@@ -69,7 +71,7 @@ const Users = () => {
   const sendSubmit = (e) => {
     e.preventDefault();
     dispatch(loading(true));
-    postDataAPI("sendTokenByAdmin", { units: sendUnits, propertyId: sendPropertyId, userId: sendUserId })
+    postDataAPI("sendTokenByAdmin", { units: sendUnits, propertyId: sendPropertyId, userId: sendUserId }, token)
       .then((res) => {
         dispatch(loading(false));
         if (res.data.status === 1) setSendTxHash(res.data.tx.hash);
@@ -84,7 +86,7 @@ const Users = () => {
     e.preventDefault();
     if (!fundsAmount || isNaN(fundsAmount) || Number(fundsAmount) <= 0) { setFundsError("Enter a valid amount greater than 0"); return; }
     dispatch(loading(true));
-    postDataAPI("addFunds", { userId: fundsUserId, amount: Number(fundsAmount) })
+    postDataAPI("addFunds", { userId: fundsUserId, amount: Number(fundsAmount) }, token)
       .then((res) => {
         dispatch(loading(false));
         if (res.data.status === 1) { setFundsSuccess(res.data.message || `﷼${Number(fundsAmount).toLocaleString()} added successfully`); setFundsAmount(""); }
@@ -96,7 +98,7 @@ const Users = () => {
   /* Delete */
   const deleteUser = (id) => {
     swal({ title: "Delete User", text: "This cannot be undone.", icon: "warning", buttons: ["Cancel", "Delete"], dangerMode: true })
-      .then((ok) => { if (ok) postDataAPI("/delete_user", { user_id: id }).then(loadUsers); });
+      .then((ok) => { if (ok) postDataAPI("/delete_user", { user_id: id }, token).then(loadUsers); });
   };
 
   return (

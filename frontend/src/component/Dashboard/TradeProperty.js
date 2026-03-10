@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getDataAPI, postDataAPI } from "../../utils/API";
+import { getDataAPIAuth, postDataAPI } from "../../utils/API";
 import Modal from "@material-ui/core/Modal";
 import GlobalTypes from "../../redux/actions/GlobalTypes";
 import swal from "sweetalert";
@@ -142,15 +142,16 @@ const TradeProperty = () => {
     const { auth } = useSelector((state) => state);
 
     async function getTrade() {
+        const token = auth?.data?.accesstoken || auth?.data?.access_token;
         var hrefPath = window.location.href;
         var id = hrefPath.split("/")[5];
-        var getProperty = await getDataAPI("/get_property/" + id);
-        var getBlockchain = await getDataAPI("/getPropBlockchainData/" + id);
-        var getBuyTradeData = await getDataAPI("/getPropTrade/" + id + "?action=buy");
-        var getSellTradeData = await getDataAPI("/getPropTrade/" + id + "?action=sell");
-        var getChartData = await getDataAPI("/getChartData/" + id);
+        var getProperty = await getDataAPIAuth("/get_property/" + id, token);
+        var getBlockchain = await getDataAPIAuth("/getPropBlockchainData/" + id, token);
+        var getBuyTradeData = await getDataAPIAuth("/getPropTrade/" + id + "?action=buy", token);
+        var getSellTradeData = await getDataAPIAuth("/getPropTrade/" + id + "?action=sell", token);
+        var getChartData = await getDataAPIAuth("/getChartData/" + id, token);
         // Fetch all market transactions for this property (not filtered by user)
-        var getLatestTransaction = await getDataAPI("/getPropTransaction/" + id);
+        var getLatestTransaction = await getDataAPIAuth("/getPropTransaction/" + id, token);
         setTransactions(getLatestTransaction.data);
         setData(Array.isArray(getProperty.data) ? getProperty.data : (getProperty.data ? [getProperty.data] : []));
         setBlockchain(Array.isArray(getBlockchain.data) ? getBlockchain.data : (getBlockchain.data ? [getBlockchain.data] : []));
@@ -219,7 +220,8 @@ const TradeProperty = () => {
             price: price ? price.value : "0",
             action: action.value,
         };
-        postDataAPI("trade", details).then(function (response) {
+        const tradeToken = auth?.data?.accesstoken || auth?.data?.access_token;
+        postDataAPI("trade", details, tradeToken).then(function (response) {
             if (response.data.status == 0) {
                 const errors = response.data.errors || {};
                 setTradeError(errors);

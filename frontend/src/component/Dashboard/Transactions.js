@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { getDataAPI, postDataAPI, postDataAPIBare } from "../../utils/API";
+import { getDataAPIAuth, postDataAPI, postDataAPIBare } from "../../utils/API";
 import { refreshToken } from "../../redux/actions/authAction";
 import Modal from "@material-ui/core/Modal";
 import swal from "sweetalert";
@@ -22,8 +22,9 @@ const Transactions = () => {
 	useEffect(() => {
 		async function getTransaction() {
 			if(auth.data){
-				var getUserTransaction = await getDataAPI("/getUserTransaction/" + auth.data.user._id);
-				var getUserBalance = await getDataAPI("/getUserBalance/" + auth.data.user._id);
+				const token = auth.data.accesstoken || auth.data.access_token;
+				var getUserTransaction = await getDataAPIAuth("/getUserTransaction/" + auth.data.user._id, token);
+				var getUserBalance = await getDataAPIAuth("/getUserBalance/" + auth.data.user._id, token);
 				setTransaction(getUserTransaction.data);
 				setBalance(getUserBalance.data);
 				let tb=0;
@@ -37,7 +38,8 @@ const Transactions = () => {
 	}, [auth]);
 
 	async function getUser() {
-		const res = await getDataAPI("/get_user");
+		const token = auth?.data?.accesstoken || auth?.data?.access_token;
+		const res = await getDataAPIAuth("/get_user", token);
 		setUsers(res.data);
 	}
 

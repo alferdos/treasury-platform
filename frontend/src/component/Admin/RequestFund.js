@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { loading } from "../../redux/actions/authAction";
-import { getDataAPI, postDataAPI } from "../../utils/API";
+import { getDataAPIAuth, postDataAPI } from "../../utils/API";
 import swal from "sweetalert";
 import AdminShell from "./AdminShell";
 
@@ -11,10 +11,12 @@ const TD = { padding: "14px 16px", fontSize: 13.5, color: "#374151", borderBotto
 
 const RequestFund = () => {
   const dispatch = useDispatch();
+  const auth = useSelector(state => state.auth);
+  const token = auth?.data?.accesstoken || auth?.data?.access_token;
   const [data, setData] = useState([]);
 
   const getRequestFund = async () => {
-    const res = await getDataAPI("/getRequestFund");
+    const res = await getDataAPIAuth("/getRequestFund", token);
     if (res.data) setData(res.data);
   };
 
@@ -25,7 +27,7 @@ const RequestFund = () => {
       .then((ok) => {
         if (ok) {
           dispatch(loading(true));
-          postDataAPI("approveRequest", { requestId }).then(() => {
+          postDataAPI("approveRequest", { requestId }, token).then(() => {
             dispatch(loading(false));
             getRequestFund();
           });

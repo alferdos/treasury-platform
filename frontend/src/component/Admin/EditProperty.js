@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, Link } from 'react-router-dom';
-import { getDataAPI, postDataAPI } from '../../utils/API';
+import { getDataAPIAuth, postDataAPI } from '../../utils/API';
 import { editProperty } from '../../redux/actions/propertyAction';
 import CreatePropertyBlockchain from './DeployNewICO';
 import RiyalSymbol from '../RiyalSymbol';
@@ -18,7 +18,8 @@ const EditProperty = () => {
 	const [newImages, setNewImages] = useState([]);
 	const [imageUploading, setImageUploading] = useState(false);
 	const [imageUploadMsg, setImageUploadMsg] = useState('');
-	const { property, ico } = useSelector((state) => state);
+	const { auth, property, ico } = useSelector((state) => state);
+	const token = auth?.data?.accesstoken || auth?.data?.access_token;
 	if (property.data) {
 		var response = property.data;
 		if (response.status == 1) {
@@ -69,7 +70,7 @@ const EditProperty = () => {
 	async function getProperty() {
 		var hrefPath = window.location.href;
 		var id = hrefPath.split("/")[5];
-		getDataAPI("/get_property/" + id).then(function(getProperty){
+		getDataAPIAuth("/get_property/" + id, token).then(function(getProperty){
 			getProperty=getProperty.data[0];
 			setPropertyData({ ...propertyData, ...getProperty });
 		})
@@ -93,7 +94,7 @@ const EditProperty = () => {
 
 	async function getBlockchain(prop) {
 		if(prop._id){
-			await getDataAPI("/getPropBlockchainData/" + prop._id).then(function(blockchainData){
+			await getDataAPIAuth("/getPropBlockchainData/" + prop._id, token).then(function(blockchainData){
 				blockchainData=blockchainData.data[0];
 				setBlockchainData(blockchainData);
 				if(blockchainData) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getDataAPI, postDataAPI } from "../../utils/API";
+import { getDataAPIAuth, postDataAPI } from "../../utils/API";
 import GlobalTypes from "../../redux/actions/GlobalTypes";
 import swal from "sweetalert";
 
@@ -42,9 +42,10 @@ const ViewProperty = () => {
 			var hrefPath = window.location.href;
 			var id = hrefPath.split("/")[5];
 			if (!id) { setError("Invalid property ID"); setLoading(false); return; }
-			var getPropertyRes = await getDataAPI("/get_property/" + id);
-			var getBlockchainRes = await getDataAPI("/getPropBlockchainData/" + id);
-			var getPropTransactionRes = await getDataAPI("/getPropTransaction/" + id + "?isSubscription=true");
+			const token = auth?.data?.accesstoken || auth?.data?.access_token;
+			var getPropertyRes = await getDataAPIAuth("/get_property/" + id, token);
+			var getBlockchainRes = await getDataAPIAuth("/getPropBlockchainData/" + id, token);
+			var getPropTransactionRes = await getDataAPIAuth("/getPropTransaction/" + id + "?isSubscription=true", token);
 			setData(Array.isArray(getPropertyRes.data) ? getPropertyRes.data : []);
 			setBlockchain(Array.isArray(getBlockchainRes.data) ? getBlockchainRes.data : []);
 			setTransaction(Array.isArray(getPropTransactionRes.data) ? getPropTransactionRes.data : []);

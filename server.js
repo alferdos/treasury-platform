@@ -4,32 +4,70 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const path = require("path");
-var bodyParser = require("body-parser");
-var fs = require("fs");
+const bodyParser = require("body-parser");
 const fileUpload = require("express-fileupload");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 
-//App config
-
+// ─── App config ───────────────────────────────────────────────────────────────
 const app = express();
+
+// F-07 FIX: Security headers via Helmet
+app.use(helmet({
+	contentSecurityPolicy: false, // disabled to allow React SPA inline scripts
+	crossOriginEmbedderPolicy: false,
+}));
+
+// F-08 FIX: Restrict CORS to known origins only
+const allowedOrigins = [
+	"https://platform.treasury.sa",
+	"http://localhost:3000",
+	"http://localhost:5000",
+];
+app.use(cors({
+	origin: (origin, callback) => {
+		// Allow requests with no origin (mobile apps, curl, Postman in dev)
+		if (!origin) return callback(null, true);
+		if (allowedOrigins.includes(origin)) return callback(null, true);
+		callback(new Error(`CORS: Origin ${origin} not allowed`));
+	},
+	credentials: true,
+}));
+
+// F-09 FIX: Rate limiting on auth endpoints to prevent brute-force
+const authLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 20, // max 20 login attempts per 15 min per IP
+	message: { status: 0, msg: "Too many login attempts. Please try again in 15 minutes." },
+	standardHeaders: true,
+	legacyHeaders: false,
+});
+
+const generalLimiter = rateLimit({
+	windowMs: 60 * 1000, // 1 minute
+	max: 200, // max 200 requests per minute per IP
+	message: { status: 0, msg: "Too many requests. Please slow down." },
+	standardHeaders: true,
+	legacyHeaders: false,
+});
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.json());
-app.use(cors());
 app.use(cookieParser());
-app.use(fileUpload());
+app.use(fileUpload({ limits: { fileSize: 10 * 1024 * 1024 } })); // 10MB limit
+
+// Apply general rate limiter to all API routes
+app.use("/api", generalLimiter);
+
+// Apply strict rate limiter to auth endpoints
+app.use("/api/login", authLimiter);
+app.use("/api/register", authLimiter);
+app.use("/api/forgot_password", authLimiter);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
-	res.json({ status: "OK", timestamp: new Date().toISOString(), version: "1.0.1" });
-});
-
-// Version endpoint for cache busting
-app.get("/version", (req, res) => {
-	res.json({ 
-		version: "2.0.0-DEPLOYMENT-FIX",
-		timestamp: new Date().toISOString(),
-		message: "API routing fix deployed successfully"
-	});
+	res.json({ status: "OK", timestamp: new Date().toISOString(), version: "2.1.0-SECURITY" });
 });
 
 // Disable caching for API routes
@@ -52,63 +90,58 @@ app.use("/api", require("./Routes/seedRoutes"));
 
 // 404 handler for unmatched API routes
 app.use("/api", (req, res) => {
-	res.status(404).json({ error: "API endpoint not found", path: req.path });
+	res.status(404).json({ error: "API endpoint not found" });
+});
+
+// F-11 FIX: Global error handler — never expose stack traces in production
+app.use((err, req, res, next) => {
+	const isDev = process.env.NODE_ENV !== "production";
+	console.error("[ERROR]", err.message, isDev ? err.stack : "");
+	res.status(err.status || 500).json({
+		status: 0,
+		msg: isDev ? err.message : "An internal server error occurred.",
+	});
 });
 
 mongoose.connect(
 	process.env.CONNECTION_URL,
 	{
 		useNewUrlParser: true,
-		// useCreateIndex: true,
 		useUnifiedTopology: true,
-		// useFindAndModify: false,
 	},
 	(err) => {
 		if (err) throw err;
 		console.log("connected to mongodb");
 	},
 );
-//listener - Serve frontend in production
+
+// Serve frontend in production
 if (process.env.NODE_ENV === "production") {
-	// CRITICAL: Serve static files FIRST with proper configuration
-	// This must come BEFORE any catch-all routes
 	app.use(express.static(path.join(__dirname, "frontend", "build"), {
 		maxAge: "1d",
 		etag: false,
-		setHeaders: (res, path) => {
-			// Ensure images are served with correct content type
-			if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+		setHeaders: (res, filePath) => {
+			if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
 				res.setHeader('Content-Type', 'image/jpeg');
-			} else if (path.endsWith('.png')) {
+			} else if (filePath.endsWith('.png')) {
 				res.setHeader('Content-Type', 'image/png');
-			} else if (path.endsWith('.gif')) {
+			} else if (filePath.endsWith('.gif')) {
 				res.setHeader('Content-Type', 'image/gif');
-			} else if (path.endsWith('.webp')) {
+			} else if (filePath.endsWith('.webp')) {
 				res.setHeader('Content-Type', 'image/webp');
 			}
 		}
 	}));
-	
-	// Catch-all route for SPA - serves index.html for all non-API routes
-	// This MUST come AFTER static file serving
+
 	app.get("*", (req, res) => {
-		console.log(`[CATCH-ALL] Received request for path: ${req.path}`);
-		// Don't serve index.html for /api routes - they should have been handled above
 		if (req.path.startsWith("/api")) {
-			console.log(`[CATCH-ALL] Blocking API request: ${req.path}`);
-			return res.status(404).json({ error: "API endpoint not found", path: req.path });
+			return res.status(404).json({ error: "API endpoint not found" });
 		}
-		console.log(`[CATCH-ALL] Serving React app for: ${req.path}`);
-		// Serve the React app for all other routes
 		res.sendFile(path.join(__dirname, "frontend", "build", "index.html"));
 	});
 }
 
-//listener
 const port = process.env.PORT;
 app.listen(port, () => {
-	console.log(`🚀 SERVER STARTED - API ROUTING FIX DEPLOYED - listening port localhost : ${port}`);
+	console.log(`🚀 Treasury Platform v2.1.0 (Security Hardened) — port ${port}`);
 });
-// Trigger rebuild - Force deployment at Wed Mar 05 2026 14:35:00 GMT+3
-// This comment forces Railway to rebuild the application
-// Deployment fix: Restructured Express routing to handle API routes correctly

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useDispatch } from "react-redux";
-import { getDataAPI, postDataAPI } from "../../utils/API";
+import { useDispatch, useSelector } from "react-redux";
+import { getDataAPIAuth, postDataAPI } from "../../utils/API";
 import swal from "sweetalert";
 import { blankProperty } from "../../redux/actions/propertyAction";
 import { Link } from "react-router-dom";
@@ -12,19 +12,21 @@ const TD = { padding: "14px 16px", fontSize: 13.5, color: "#374151", borderBotto
 
 const AdminProperties = () => {
   const dispatch = useDispatch();
+  const auth = useSelector(state => state.auth);
+  const token = auth?.data?.accesstoken || auth?.data?.access_token;
   const [data, setData] = useState([]);
 
   useEffect(() => { dispatch(blankProperty()); }, [dispatch]);
 
   const getProperty = async () => {
-    const res = await getDataAPI("/get_property");
+    const res = await getDataAPIAuth("/get_property", token);
     if (res.data) setData(Array.isArray(res.data) ? res.data : res.data.data || []);
   };
   useEffect(() => { getProperty(); }, []);
 
   const deleteProperty = (id) => {
     swal({ title: "Delete Property", text: "This cannot be undone.", icon: "warning", buttons: ["Cancel", "Delete"], dangerMode: true })
-      .then((ok) => { if (ok) postDataAPI("/delete_property", { property_id: id }).then(getProperty); });
+      .then((ok) => { if (ok) postDataAPI("/delete_property", { property_id: id }, token).then(getProperty); });
   };
 
   const statusPill = (s) => ({

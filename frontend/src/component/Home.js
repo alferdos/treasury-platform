@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getDataAPI, postDataAPI } from "./../utils/API";
+import { getDataAPI } from "./../utils/API";
 import { useHistory, Link } from "react-router-dom";
 import Header from "./Includes/Header";
 import DashboardHeader from "./Includes/DashboardHeader";

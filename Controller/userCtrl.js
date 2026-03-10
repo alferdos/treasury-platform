@@ -36,23 +36,32 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt")
 const privKey = process.env.PRIVATE_KEY;
 const rpcUrl = process.env.BSC_NET;
-const key = crypto.randomBytes(32);
-const iv = crypto.randomBytes(16);
+// F-02 FIX: Use a persistent encryption key from environment variable.
+// WALLET_ENCRYPTION_KEY must be a 64-character hex string (32 bytes).
+// Generate once with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+// and set it as a Railway environment variable. NEVER regenerate — existing wallets will be unreadable.
+if (!process.env.WALLET_ENCRYPTION_KEY || process.env.WALLET_ENCRYPTION_KEY.length !== 64) {
+	console.error('[SECURITY] WALLET_ENCRYPTION_KEY env var is missing or invalid. Wallet operations will fail.');
+}
+const WALLET_ENC_KEY = Buffer.from(process.env.WALLET_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex'), 'hex');
 
-//Encrypting text
+//Encrypting text — generates a unique IV per encryption for forward secrecy
 function encrypt(text) {
-	let cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key), iv);
+	const iv = crypto.randomBytes(16); // unique IV per call
+	let cipher = crypto.createCipheriv('aes-256-cbc', WALLET_ENC_KEY, iv);
    	let encrypted = cipher.update(text);
    	encrypted = Buffer.concat([encrypted, cipher.final()]);
-   	return { key: key.toString('hex'), iv: iv.toString('hex'), encryptedData: encrypted.toString('hex') };
+   	// NOTE: key is NOT stored in the return value — it lives only in the env var
+   	return { iv: iv.toString('hex'), encryptedData: encrypted.toString('hex') };
 }
 
 // Decrypting text
 function decrypt(text) {
-	let key = Buffer.from(text.key, 'hex');
+	// Support both old format (with key field) and new format (without key field)
+	const decKey = text.key ? Buffer.from(text.key, 'hex') : WALLET_ENC_KEY;
 	let iv = Buffer.from(text.iv, 'hex');
    	let encryptedText = Buffer.from(text.encryptedData, 'hex');
-   	let decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(key), iv);
+   	let decipher = crypto.createDecipheriv('aes-256-cbc', decKey, iv);
    	let decrypted = decipher.update(encryptedText);
    	decrypted = Buffer.concat([decrypted, decipher.final()]);
    	return decrypted.toString();
@@ -95,8 +104,15 @@ const userController = {
 				status: 1,
 				action: 'register',
 				user: {
-					...newUser._doc,
-					password: " ",
+					_id: newUser._id,
+					name: newUser.name,
+					email: newUser.email,
+					phone_no: newUser.phone_no,
+					national_id: newUser.national_id,
+					profile_image: newUser.profile_image,
+					role: newUser.role,
+					createdAt: newUser.createdAt,
+					// F-04: privateKey and walletAddress intentionally excluded
 				},
 			});
 		} catch (err) {
@@ -137,12 +153,21 @@ const userController = {
 				accesstoken,
 				role: user.role,
 				user: {
-					...user._doc,
-					password: " ",
+					_id: user._id,
+					name: user.name,
+					email: user.email,
+					phone_no: user.phone_no,
+					national_id: user.national_id,
+					profile_image: user.profile_image,
+					sar_balance: user.sar_balance,
+					role: user.role,
+					createdAt: user.createdAt,
+					// F-04: privateKey and walletAddress intentionally excluded
 				},
 			});
 		} catch (err) {
-			return res.status(500).json({ msg: err.stack });
+			console.error('[login error]', err.stack);
+			return res.status(500).json({ msg: 'An internal server error occurred.' });
 		}
 	},
 
@@ -242,14 +267,22 @@ const userController = {
 					const user = await User.findById(result.id);
 					if(user!=null){
 						const access_token = createAccessToken({ id: user.id });
-						res.json({
-							status: 1,
-							access_token,
-							user: {
-								...user._doc,
-								password: " ",
-							},
-						});
+							res.json({
+								status: 1,
+								access_token,
+								user: {
+									_id: user._id,
+									name: user.name,
+									email: user.email,
+									phone_no: user.phone_no,
+									national_id: user.national_id,
+									profile_image: user.profile_image,
+									sar_balance: user.sar_balance,
+									role: user.role,
+									createdAt: user.createdAt,
+									// F-04: privateKey and walletAddress intentionally excluded
+								},
+							});
 					}
 					else{
 						return res.json({ status: 0, msg: "user does not exist" });
@@ -332,14 +365,14 @@ const userController = {
 		}
 	},
 
-	getUser: async (req, res) => {
+		getUser: async (req, res) => {
 		try {
 			let role=req.query.role;
 			if(role){
-				var user = await User.find({role});
+				var user = await User.find({role}).select('-password -privateKey -walletAddress');
 			}
 			else{
-				var user = await User.find();
+				var user = await User.find().select('-password -privateKey -walletAddress');
 			}
 			if (!user) {
 				return res.status(400).json({ msg: "There is no user exist" });

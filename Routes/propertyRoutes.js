@@ -1,17 +1,18 @@
 const router = require("express").Router();
 const propertyCtrl = require("../Controller/propertyCtrl");
+const { verifyToken, verifyAdmin } = require("../middleware/auth");
 
-router.post("/create_property", propertyCtrl.createProperty);
-router.post("/update_property", propertyCtrl.updateProperty);
-
-router.post("/upload", propertyCtrl.upload);
-router.post("/uploadPropertyImages", propertyCtrl.uploadPropertyImages);
-
+// ─── Public routes ────────────────────────────────────────────────────────────
 router.get("/get_property", propertyCtrl.getProperty);
 router.get("/get_property/:id", propertyCtrl.getPropertyById);
-router.post("/delete_property", propertyCtrl.deleteProperty);
-router.post("/updatePropertyFile", propertyCtrl.updatePropertyFile);
-router.post("/changeData", propertyCtrl.changeData);
+
+// ─── Admin-only routes ────────────────────────────────────────────────────────
+router.post("/create_property", verifyToken, verifyAdmin, propertyCtrl.createProperty);
+router.post("/update_property", verifyToken, verifyAdmin, propertyCtrl.updateProperty);
+router.post("/upload", verifyToken, verifyAdmin, propertyCtrl.upload);
+router.post("/uploadPropertyImages", verifyToken, verifyAdmin, propertyCtrl.uploadPropertyImages);
+router.post("/delete_property", verifyToken, verifyAdmin, propertyCtrl.deleteProperty);
+router.post("/updatePropertyFile", verifyToken, verifyAdmin, propertyCtrl.updatePropertyFile);
+router.post("/changeData", verifyToken, verifyAdmin, propertyCtrl.changeData);
 
 module.exports = router;
- 

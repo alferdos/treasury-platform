@@ -1,8 +1,11 @@
 const router = require("express").Router();
 const deployCtrl = require("../Controller/deployCtrl");
+const { verifyToken, verifyAdmin } = require("../middleware/auth");
 
-//Route url to deploy contract.
-router.post("/deploy", deployCtrl.deploy);
+// ─── Public routes ────────────────────────────────────────────────────────────
 router.get("/getPropBlockchainData/:propId", deployCtrl.getBlockchainDataByPropId);
+
+// ─── Admin-only routes ────────────────────────────────────────────────────────
+router.post("/deploy", verifyToken, verifyAdmin, deployCtrl.deploy);
 
 module.exports = router;
